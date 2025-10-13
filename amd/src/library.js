@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,21 +14,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * English language strings for local_reblibrary.
+ * REB Library JavaScript module.
  *
- * @package    local_reblibrary
+ * @module     local_reblibrary/library
  * @copyright  2025 Your Name
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Initialize the library module.
+ */
+export const init = () => {
+    // Simple hello world example
+    console.log('Hello World from REB Library!');
 
-$string['pluginname'] = 'REB Library';
-
-// Library home page strings.
-$string['librarypage_title'] = 'REB Library';
-$string['librarypage_heading'] = 'REB Library';
-$string['librarypage_welcome'] = 'Welcome to REB Library';
-$string['librarypage_description'] = 'Browse and explore educational resources tailored for your learning journey.';
-$string['librarypage_placeholder_title'] = 'Coming Soon';
-$string['librarypage_placeholder_text'] = 'The REB Library is currently under development. New features and resources will be available soon.';
+    // Display alert to confirm JavaScript is loaded
+    window.addEventListener('load', () => {
+        console.log('REB Library module initialized successfully');
+    });
+};

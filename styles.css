@@ -1,0 +1,103 @@
+/**
+ * REB Library plugin styles.
+ *
+ * @package    local_reblibrary
+ * @copyright  2025 Your Name
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+.main-inner {
+	max-width: 100%!important;
+
+}
+/* Main container */
+.local-reblibrary-home {
+    padding: 20px 0;
+}
+
+/* Hero section styling */
+.local-reblibrary-home .alert-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.local-reblibrary-home .alert-info .alert-heading {
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.local-reblibrary-home .alert-info p {
+    font-size: 1.1rem;
+    opacity: 0.95;
+}
+
+/* Card styling */
+.local-reblibrary-home .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.local-reblibrary-home .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.local-reblibrary-home .card-title {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+}
+
+.local-reblibrary-home .card-text {
+    color: #555;
+    line-height: 1.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .local-reblibrary-home .alert-info .alert-heading {
+        font-size: 1.5rem;
+    }
+
+    .local-reblibrary-home .alert-info p {
+        font-size: 1rem;
+    }
+}
+
+/* Animation for cards */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.local-reblibrary-home .card {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.local-reblibrary-home .col-md-4:nth-child(1) .card {
+    animation-delay: 0.1s;
+}
+
+.local-reblibrary-home .col-md-4:nth-child(2) .card {
+    animation-delay: 0.2s;
+}
+
+.local-reblibrary-home .col-md-4:nth-child(3) .card {
+    animation-delay: 0.3s;
+}
