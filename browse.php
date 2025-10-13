@@ -15,10 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * REB Library home page.
+ * REB Library browse page.
  *
- * This page displays the library homepage accessible to both
- * authenticated users and guests.
+ * This page allows users to browse library resources by category.
  *
  * @package    local_reblibrary
  * @copyright  2025 Your Name
@@ -34,27 +33,25 @@ require_login(null, true);
 // Set up the page context.
 $context = context_system::instance();
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/reblibrary/index.php'));
+$PAGE->set_url(new moodle_url('/local/reblibrary/browse.php'));
 $PAGE->set_pagelayout('standard');
-$PAGE->set_title(get_string('librarypage_title', 'local_reblibrary'));
-$PAGE->set_heading(get_string('librarypage_heading', 'local_reblibrary'));
+$PAGE->set_title(get_string('browsepage_title', 'local_reblibrary'));
+$PAGE->set_heading(get_string('browsepage_heading', 'local_reblibrary'));
 
 // Add breadcrumb navigation.
-$PAGE->navbar->add(get_string('pluginname', 'local_reblibrary'));
+$PAGE->navbar->add(get_string('pluginname', 'local_reblibrary'), new moodle_url('/local/reblibrary/index.php'));
+$PAGE->navbar->add(get_string('nav_browse', 'local_reblibrary'));
 
 // Load JavaScript module.
 $PAGE->requires->js_call_amd('local_reblibrary/library', 'init');
 
 // Prepare data for template.
 $templatecontext = [
-    'welcome_message' => get_string('librarypage_welcome', 'local_reblibrary'),
-    'description' => get_string('librarypage_description', 'local_reblibrary'),
-    'placeholder_title' => get_string('librarypage_placeholder_title', 'local_reblibrary'),
-    'placeholder_text' => get_string('librarypage_placeholder_text', 'local_reblibrary'),
+    'description' => get_string('browsepage_description', 'local_reblibrary'),
 ];
 
 // Output the page.
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('local_reblibrary/navigation', local_reblibrary_get_navigation('index'));
+echo $OUTPUT->render_from_template('local_reblibrary/navigation', local_reblibrary_get_navigation('browse'));
 echo $OUTPUT->render_from_template('local_reblibrary/library_home', $templatecontext);
 echo $OUTPUT->footer();
