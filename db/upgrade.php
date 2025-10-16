@@ -15,17 +15,30 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for local_reblibrary.
+ * Database upgrade script for local_reblibrary.
  *
  * @package    local_reblibrary
- * @copyright  2025 Your Name
+ * @copyright  2025 Rwanda Education Board
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Upgrade the local_reblibrary plugin.
+ *
+ * @param int $oldversion The version number of the plugin that was installed.
+ * @return bool Always returns true.
+ */
+function xmldb_local_reblibrary_upgrade($oldversion) {
+    global $DB;
 
-$plugin->component = 'local_reblibrary';
-$plugin->version = 2025101602;           // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires = 2025041400;          // Requires Moodle 5.0 (Build: 20250414).
-$plugin->maturity = MATURITY_STABLE;     // Code maturity level.
-$plugin->release = '1.1.1';              // Human-readable version name.
+    $dbman = $DB->get_manager();
+
+    // For future database upgrades, add version checks here.
+    // Example:
+    // if ($oldversion < 2025101601) {
+    //     // Upgrade steps for version 2025101601.
+    //     upgrade_plugin_savepoint(true, 2025101601, 'local', 'reblibrary');
+    // }
+
+    return true;
+}
