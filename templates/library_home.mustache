@@ -19,71 +19,137 @@
 
     REB Library home page template.
 
-    This template displays the library homepage with a welcome section
-    and placeholder content blocks.
+    This template displays the library homepage with header, sidebar navigation,
+    book grids, and friends sidebar.
 
     Example context (json):
     {
-        "welcome_message": "Welcome to REB Library",
-        "description": "Browse and explore educational resources.",
-        "placeholder_title": "Coming Soon",
-        "placeholder_text": "Library features are currently under development."
+        "header": {...},
+        "sidebar": {...},
+        "recently_added": [...],
+        "recommended": [...],
+        "friends": [...]
     }
 }}
 
-<div class="local-reblibrary-home">
-    {{! Hero section with welcome message }}
-    <div class="container-fluid mb-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="alert alert-info" role="alert">
-                    <h4 class="alert-heading">{{welcome_message}}</h4>
-                    <p class="mb-0">{{description}}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{! Main content area }}
-    <div class="container">
-        <div class="row">
-            {{! Placeholder content card }}
-            <div class="col-md-12 mb-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">{{placeholder_title}}</h5>
-                        <p class="card-text">{{placeholder_text}}</p>
-                    </div>
-                </div>
-            </div>
+<div class="reblibrary-layout">
+    {{! Left Sidebar Navigation }}
+    <aside class="reblibrary-sidebar">
+        {{! Browse Section }}
+        <div class="sidebar-section">
+            <h6 class="sidebar-heading">{{sidebar.browse_heading}}</h6>
+            <ul class="sidebar-menu">
+                {{#sidebar.browse_items}}
+                <li class="sidebar-item {{#active}}active{{/active}}">
+                    <a href="{{url}}">
+                        <i class="{{icon}}"></i>
+                        <span>{{name}}</span>
+                    </a>
+                </li>
+                {{/sidebar.browse_items}}
+            </ul>
         </div>
 
-        {{! Additional placeholder cards in a grid }}
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Browse Resources</h5>
-                        <p class="card-text">Access a wide range of educational materials and learning resources.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Search Library</h5>
-                        <p class="card-text">Find specific content quickly using our advanced search functionality.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">My Collection</h5>
-                        <p class="card-text">Organize and access your saved resources and bookmarks.</p>
-                    </div>
-                </div>
-            </div>
+        {{! Your Books Section }}
+        <div class="sidebar-section">
+            <h6 class="sidebar-heading">{{sidebar.your_books_heading}}</h6>
+            <ul class="sidebar-menu">
+                {{#sidebar.your_books_items}}
+                <li class="sidebar-item {{#active}}active{{/active}}">
+                    <a href="{{url}}">
+                        <i class="{{icon}}"></i>
+                        <span>{{name}}</span>
+                    </a>
+                </li>
+                {{/sidebar.your_books_items}}
+            </ul>
         </div>
-    </div>
+
+        {{! Shelves Section }}
+        <div class="sidebar-section">
+            <h6 class="sidebar-heading">{{sidebar.shelves_heading}}</h6>
+            <ul class="sidebar-menu">
+                {{#sidebar.shelves_items}}
+                <li class="sidebar-item {{#active}}active{{/active}}">
+                    <a href="{{url}}">
+                        <i class="{{icon}}"></i>
+                        <span>{{name}}</span>
+                    </a>
+                </li>
+                {{/sidebar.shelves_items}}
+            </ul>
+            <button class="btn btn-create-shelf">{{sidebar.create_shelf_text}}</button>
+        </div>
+    </aside>
+
+    {{! Main Content Area }}
+    <main class="reblibrary-main">
+        {{! Recently Added Section }}
+        <section class="book-section">
+            <div class="section-header">
+                <h2 class="section-title">{{recently_added_title}}</h2>
+            </div>
+            <div class="book-grid">
+                {{#recently_added}}
+                <div class="book-card">
+                    <div class="book-cover">
+                        {{#cover_url}}
+                        <img src="{{cover_url}}" alt="{{title}}">
+                        {{/cover_url}}
+                        {{#has_actions}}
+                        <div class="book-actions">
+                            <button class="action-btn" aria-label="Bookmark" title="Bookmark">
+                                <i class="fa fa-bookmark"></i>
+                            </button>
+                            <button class="action-btn" aria-label="Share" title="Share">
+                                <i class="fa fa-share-alt"></i>
+                            </button>
+                            <button class="action-btn" aria-label="Info" title="Info">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                        </div>
+                        {{/has_actions}}
+                    </div>
+                    <div class="book-info">
+                        <h3 class="book-title">{{title}}</h3>
+                        <p class="book-author">{{author}}</p>
+                        <div class="book-rating">
+                            {{#stars}}
+                            <span class="star {{#empty}}empty{{/empty}}">★</span>
+                            {{/stars}}
+                        </div>
+                    </div>
+                </div>
+                {{/recently_added}}
+            </div>
+        </section>
+
+        {{! Recommended For You Section }}
+        <section class="book-section">
+            <div class="section-header">
+                <h2 class="section-title">{{recommended_title}}</h2>
+            </div>
+            <div class="book-grid">
+                {{#recommended}}
+                <div class="book-card">
+                    <div class="book-cover">
+                        {{#cover_url}}
+                        <img src="{{cover_url}}" alt="{{title}}">
+                        {{/cover_url}}
+                    </div>
+                    <div class="book-info">
+                        <h3 class="book-title">{{title}}</h3>
+                        <p class="book-author">{{author}}</p>
+                        <div class="book-rating">
+                            {{#stars}}
+                            <span class="star {{#empty}}empty{{/empty}}">★</span>
+                            {{/stars}}
+                        </div>
+                    </div>
+                </div>
+                {{/recommended}}
+            </div>
+        </section>
+    </main>
+
 </div>

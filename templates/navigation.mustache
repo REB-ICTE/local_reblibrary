@@ -17,37 +17,56 @@
 {{!
     @template local_reblibrary/navigation
 
-    REB Library navigation menu template.
+    REB Library sidebar navigation template.
 
-    This template displays the main navigation tabs for the library.
+    This template displays the left sidebar navigation for the library.
 
     Example context (json):
     {
-        "nav_items": [
-            {
-                "name": "Home",
-                "url": "/local/reblibrary/index.php",
-                "active": true
-            },
-            {
-                "name": "Browse",
-                "url": "/local/reblibrary/browse.php",
-                "active": false
-            }
-        ]
+        "browse_items": [...],
+        "your_books_items": [...],
+        "shelves_items": [...]
     }
 }}
 
-<div class="local-reblibrary-navigation">
-    <ul class="nav nav-tabs mb-4" role="tablist">
-        {{#nav_items}}
-        <li class="nav-item" role="presentation">
-            <a class="nav-link {{#active}}active{{/active}}"
-               href="{{url}}"
-               {{#active}}aria-current="page"{{/active}}>
-                {{name}}
-            </a>
-        </li>
-        {{/nav_items}}
-    </ul>
+<div class="reblibrary-sidebar">
+    {{! Browse Section }}
+    <div class="sidebar-section">
+        <h6 class="sidebar-heading">{{browse_heading}}</h6>
+        <ul class="sidebar-menu">
+            {{#browse_items}}
+            <li class="sidebar-item {{#active}}active{{/active}}">
+                <i class="{{icon}}"></i>
+                <a href="{{url}}">{{name}}</a>
+            </li>
+            {{/browse_items}}
+        </ul>
+    </div>
+
+    {{! Your Books Section }}
+    <div class="sidebar-section">
+        <h6 class="sidebar-heading">{{your_books_heading}}</h6>
+        <ul class="sidebar-menu">
+            {{#your_books_items}}
+            <li class="sidebar-item {{#active}}active{{/active}}">
+                <i class="{{icon}}"></i>
+                <a href="{{url}}">{{name}}</a>
+            </li>
+            {{/your_books_items}}
+        </ul>
+    </div>
+
+    {{! Shelves Section }}
+    <div class="sidebar-section">
+        <h6 class="sidebar-heading">{{shelves_heading}}</h6>
+        <ul class="sidebar-menu">
+            {{#shelves_items}}
+            <li class="sidebar-item {{#active}}active{{/active}}">
+                <i class="{{icon}}"></i>
+                <a href="{{url}}">{{name}}</a>
+            </li>
+            {{/shelves_items}}
+        </ul>
+        <button class="btn btn-create-shelf">{{create_shelf_text}}</button>
+    </div>
 </div>

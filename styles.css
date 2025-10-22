@@ -5,144 +5,505 @@
  * @copyright  2025 Your Name
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+/* Hide default Moodle page header */
 .main-inner {
-	max-width: 100%!important;
-	margin-top: 10px!important;
+    /* max-width: 100% !important; */
+    /* margin-top: 0 !important; */
+    /* padding: 0 !important; */
 }
 
-#page-header{
-	display: none!important;
+/* #page-header { */
+/*     display: none !important; */
+/* } */
+
+#page-footer {
+    margin-top: 0 !important;
 }
 
-/* Navigation menu */
-.local-reblibrary-navigation {
-    margin: 0 0 1.5rem 0;
+/* ============================================
+   HEADER STYLES
+   ============================================ */
+.reblibrary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 30px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e0e0e0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
-.local-reblibrary-navigation .nav-tabs {
-    border-bottom: 2px solid #e0e0e0;
-    margin-bottom: 0;
+.header-left .library-logo {
+    font-size: 24px;
+    font-weight: 300;
+    color: #005198;
+    margin: 0;
 }
 
-.local-reblibrary-navigation .nav-link {
-    color: #555;
+.header-center {
+    flex: 1;
+    max-width: 600px;
+    margin: 0 40px;
+}
+
+.search-container {
+    position: relative;
+}
+
+.search-container .search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 15px 8px 40px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.btn-subscribe {
+    background-color: #005198;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 4px;
     font-weight: 500;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-bottom: 3px solid transparent;
-    transition: all 0.3s ease;
-    border-radius: 0;
+    cursor: pointer;
 }
 
-.local-reblibrary-navigation .nav-link:hover {
-    color: #667eea;
-    border-bottom-color: rgba(102, 126, 234, 0.3);
-    background-color: rgba(102, 126, 234, 0.05);
+.btn-subscribe:hover {
+    background-color: #003d75;
 }
 
-.local-reblibrary-navigation .nav-link.active {
-    color: #667eea;
-    font-weight: 600;
-    border-bottom-color: #667eea;
-    background-color: transparent;
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-/* Responsive navigation */
-@media (max-width: 576px) {
-    .local-reblibrary-navigation .nav-link {
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-    }
+.user-name {
+    font-size: 14px;
+    color: #333;
 }
 
-/* Main container */
-.local-reblibrary-home {
-    padding: 20px 0;
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
 }
 
-/* Hero section styling */
-.local-reblibrary-home .alert-info {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: #ffffff;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.local-reblibrary-home .alert-info .alert-heading {
-    color: #ffffff;
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-}
-
-.local-reblibrary-home .alert-info p {
-    font-size: 1.1rem;
-    opacity: 0.95;
-}
-
-/* Card styling */
-.local-reblibrary-home .card {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+.user-avatar .avatar-img {
+    width: 100%;
     height: 100%;
+    object-fit: cover;
 }
 
-.local-reblibrary-home .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-}
-
-.local-reblibrary-home .card-title {
-    color: #667eea;
+.user-avatar .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 600;
-    font-size: 1.3rem;
-    margin-bottom: 1rem;
 }
 
-.local-reblibrary-home .card-text {
+.header-icons {
+    display: flex;
+    gap: 15px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 18px;
+    cursor: pointer;
+    position: relative;
+}
+
+.icon-btn:hover {
+    color: #333;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #dc3545;
+    color: white;
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* ============================================
+   LAYOUT STRUCTURE
+   ============================================ */
+.reblibrary-layout {
+    display: flex;
+    min-height: calc(100vh - 65px);
+}
+
+/* ============================================
+   LEFT SIDEBAR NAVIGATION
+   ============================================ */
+.reblibrary-sidebar {
+    width: 220px;
+    background-color: #f8f9fa;
+    padding: 30px 20px;
+    border-right: 1px solid #e0e0e0;
+}
+
+.sidebar-section {
+    margin-bottom: 30px;
+}
+
+.sidebar-heading {
+    font-size: 11px;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-item {
+    margin-bottom: 8px;
+}
+
+.sidebar-item a {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
     color: #555;
-    line-height: 1.6;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 14px;
 }
 
-/* Responsive adjustments */
+.sidebar-item i {
+    margin-right: 10px;
+    width: 20px;
+    color: #999;
+}
+
+.sidebar-item a:hover {
+    background-color: #e9ecef;
+    color: #333;
+}
+
+.sidebar-item.active a {
+    background-color: #005198;
+    color: white;
+}
+
+.sidebar-item.active i {
+    color: white;
+}
+
+.btn-create-shelf {
+    width: 100%;
+    background-color: #005198;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.btn-create-shelf:hover {
+    background-color: #003d75;
+}
+
+/* ============================================
+   MAIN CONTENT AREA
+   ============================================ */
+.reblibrary-main {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    background-color: #ffffff;
+}
+
+/* Book Sections */
+.book-section {
+    margin-bottom: 40px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.section-link {
+    font-size: 14px;
+    color: #005198;
+    text-decoration: none;
+}
+
+.section-link:hover {
+    text-decoration: underline;
+}
+
+/* Book Grid */
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 20px;
+}
+
+/* Book Card */
+.book-card {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+}
+
+.book-cover {
+    position: relative;
+    width: 100%;
+    padding-top: 150%;
+    background-color: #f0f0f0;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.book-cover img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.book-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.book-card:hover .book-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn:hover {
+    background-color: white;
+}
+
+.book-info {
+    margin-top: 10px;
+}
+
+.book-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.book-author {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.book-rating {
+    display: flex;
+    gap: 2px;
+}
+
+.star {
+    color: #ffc107;
+    font-size: 12px;
+}
+
+.star.empty {
+    color: #ddd;
+}
+
+/* ============================================
+   RIGHT SIDEBAR (FRIENDS)
+   ============================================ */
+.reblibrary-friends {
+    width: 260px;
+    background-color: #f8f9fa;
+    padding: 30px 20px;
+    border-left: 1px solid #e0e0e0;
+}
+
+.friends-heading {
+    font-size: 11px;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 20px;
+}
+
+.friend-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.friend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.friend-item:last-child {
+    border-bottom: none;
+}
+
+.friend-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.friend-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.friend-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.friend-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.friend-reading {
+    font-size: 12px;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 992px) {
+    .reblibrary-friends {
+        display: none;
+    }
+
+    .book-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
-    .local-reblibrary-home .alert-info .alert-heading {
-        font-size: 1.5rem;
+    .reblibrary-sidebar {
+        width: 180px;
     }
 
-    .local-reblibrary-home .alert-info p {
-        font-size: 1rem;
+    .header-center {
+        margin: 0 20px;
     }
-}
 
-/* Animation for cards */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    .user-name {
+        display: none;
     }
 }
 
-.local-reblibrary-home .card {
-    animation: fadeInUp 0.6s ease forwards;
-}
+@media (max-width: 576px) {
+    .reblibrary-layout {
+        flex-direction: column;
+    }
 
-.local-reblibrary-home .col-md-4:nth-child(1) .card {
-    animation-delay: 0.1s;
-}
+    .reblibrary-sidebar {
+        width: 100%;
+        padding: 15px;
+    }
 
-.local-reblibrary-home .col-md-4:nth-child(2) .card {
-    animation-delay: 0.2s;
-}
+    .sidebar-section {
+        margin-bottom: 15px;
+    }
 
-.local-reblibrary-home .col-md-4:nth-child(3) .card {
-    animation-delay: 0.3s;
+    .reblibrary-main {
+        padding: 15px;
+    }
+
+    .book-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 15px;
+    }
 }

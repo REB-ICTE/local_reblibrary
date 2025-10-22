@@ -1,0 +1,46 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_reblibrary/header
+
+    REB Library header template.
+
+    Example context (json):
+    {
+        "logo_text": "library.",
+        "search_placeholder": "Search...",
+        "subscribe_text": "Subscribe",
+        "user_fullname": "Leonardo DiCaprio",
+        "user_picture_url": "/path/to/avatar.jpg",
+        "has_notifications": true,
+        "notification_count": 3
+    }
+}}
+
+<div class="reblibrary-header">
+    <div class="header-left">
+        <h1 class="library-logo">{{logo_text}}</h1>
+    </div>
+
+    <div class="header-center">
+        <div class="search-container">
+            <i class="fa fa-search search-icon"></i>
+            <input type="text" class="form-control search-input" placeholder="{{search_placeholder}}" aria-label="{{search_placeholder}}">
+        </div>
+    </div>
+
+</div>
