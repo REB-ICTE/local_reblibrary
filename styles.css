@@ -5,10 +5,13 @@
  * @copyright  2025 Your Name
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 .main-inner {
 	max-width: 100%!important;
+	margin-top: 10px!important;
+}
 
+#page-header{
+	display: none!important;
 }
 
 /* Navigation menu */
