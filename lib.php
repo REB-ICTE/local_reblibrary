@@ -66,7 +66,25 @@ function local_reblibrary_extend_navigation(global_navigation $navigation) {
  * @param context $context
  */
 function local_reblibrary_extend_settings_navigation(settings_navigation $navigation, context $context) {
-    // Add your settings navigation items here if needed.
+    global $PAGE;
+
+    // Only add admin link if user has site config capability.
+    $systemcontext = context_system::instance();
+    if (has_capability('moodle/site:config', $systemcontext)) {
+        // Try to add to site administration if available.
+        if ($settingnode = $navigation->find('siteadministration', navigation_node::TYPE_SITE_ADMIN)) {
+            $adminurl = new moodle_url('/local/reblibrary/admin.php');
+            $adminnode = navigation_node::create(
+                get_string('nav_admin', 'local_reblibrary'),
+                $adminurl,
+                navigation_node::TYPE_SETTING,
+                null,
+                'reblibrary_admin',
+                new pix_icon('i/settings', get_string('nav_admin', 'local_reblibrary'))
+            );
+            $settingnode->add_node($adminnode);
+        }
+    }
 }
 
 /**

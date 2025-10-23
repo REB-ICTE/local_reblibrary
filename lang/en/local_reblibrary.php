@@ -77,3 +77,41 @@ $string['searchpage_description'] = 'Find specific content quickly.';
 $string['collectionpage_title'] = 'My Collection';
 $string['collectionpage_heading'] = 'My Collection';
 $string['collectionpage_description'] = 'View your saved resources and bookmarks.';
+
+// Admin page strings.
+$string['adminpage_title'] = 'Library Administration';
+$string['adminpage_heading'] = 'REB Library Administration';
+$string['adminpage_welcome'] = 'Welcome to REB Library Administration';
+$string['adminpage_description'] = 'Manage library settings, resources, and user access from this admin panel.';
+
+// Navigation strings.
+$string['nav_home'] = 'Home';
+$string['nav_browse'] = 'Browse';
+$string['nav_search'] = 'Search';
+$string['nav_collection'] = 'My Collection';
+$string['nav_admin'] = 'Library Admin';
+
+// Admin navigation strings.
+$string['admin_menu_heading'] = 'ADMINISTRATION';
+$string['admin_nav_dashboard'] = 'Dashboard';
+$string['admin_nav_education'] = 'Education Structure';
+$string['admin_nav_resources'] = 'Resources & Authors';
+$string['admin_nav_categories'] = 'Categories';
+$string['admin_nav_assignments'] = 'Assignments';
+
+// Education levels CRUD.
+$string['admin_edu_levels_title'] = 'Manage Education Levels';
+$string['admin_edu_levels_heading'] = 'Education Levels Management';
+$string['form_level_name'] = 'Level Name';
+$string['form_level_name_help'] = 'The name of the education level (e.g., Pre-primary, Primary, Secondary)';
+$string['form_add_level'] = 'Add Education Level';
+$string['form_edit_level'] = 'Edit Education Level';
+$string['error_duplicate_level_name'] = 'An education level with this name already exists';
+
+// General CRUD messages.
+$string['success_created'] = 'Record created successfully';
+$string['success_updated'] = 'Record updated successfully';
+$string['success_deleted'] = 'Record deleted successfully';
+$string['confirm_delete'] = 'Confirm Deletion';
+$string['confirm_delete_level'] = 'Are you sure you want to delete the education level "{$a}"?';
+$string['areyousure'] = 'Are you sure?';

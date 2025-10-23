@@ -8,14 +8,19 @@
 
 /* Hide default Moodle page header */
 .main-inner {
-    /* max-width: 100% !important; */
-    /* margin-top: 0 !important; */
-    /* padding: 0 !important; */
+    max-width: 100% !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
 }
 
-/* #page-header { */
-/*     display: none !important; */
-/* } */
+#page-header *{
+    display: none !important;
+}
+#page-header{
+	margin: 0;
+	padding: 0 !important;
+	margin-top: 10px;
+}
 
 #page-footer {
     margin-top: 0 !important;
@@ -458,6 +463,150 @@
 }
 
 /* ============================================
+   ADMIN SECTION STYLES
+   ============================================ */
+.admin-section {
+    padding: 20px 0;
+}
+
+.admin-section .section-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Stats Cards */
+.stats-card {
+    text-align: center;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stats-card .card-body {
+    padding: 25px 15px;
+}
+
+.stats-icon {
+    font-size: 36px;
+    color: #005198;
+    margin-bottom: 15px;
+}
+
+.stats-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #005198;
+    margin-bottom: 8px;
+}
+
+.stats-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 0;
+}
+
+/* Bootstrap Tabs Override */
+.nav-tabs {
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #666;
+    font-weight: 500;
+    padding: 12px 20px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: #005198;
+}
+
+.nav-tabs .nav-link.active {
+    color: #005198;
+    background-color: transparent;
+    border-color: transparent transparent #005198;
+}
+
+.tab-content {
+    padding: 20px 0;
+}
+
+/* Table Styles */
+.table {
+    margin-top: 15px;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    color: #333;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+    padding: 12px;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.table tbody td {
+    padding: 12px;
+    vertical-align: middle;
+}
+
+/* Action Buttons */
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 13px;
+    margin-right: 5px;
+}
+
+.btn-primary {
+    background-color: #005198;
+    border-color: #005198;
+}
+
+.btn-primary:hover {
+    background-color: #003d75;
+    border-color: #003d75;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #000;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    border-color: #e0a800;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #c82333;
+}
+
+/* ============================================
    RESPONSIVE DESIGN
    ============================================ */
 @media (max-width: 992px) {
@@ -482,6 +631,14 @@
     .user-name {
         display: none;
     }
+
+    .stats-card .stats-number {
+        font-size: 24px;
+    }
+
+    .stats-icon {
+        font-size: 28px;
+    }
 }
 
 @media (max-width: 576px) {
@@ -505,5 +662,19 @@
     .book-grid {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 15px;
+    }
+
+    .nav-tabs .nav-link {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .table {
+        font-size: 13px;
+    }
+
+    .btn-sm {
+        padding: 4px 8px;
+        font-size: 12px;
     }
 }
