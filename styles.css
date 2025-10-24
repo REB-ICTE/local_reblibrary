@@ -6,30 +6,35 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/* Hide default Moodle page header */
-.main-inner {
+/* ============================================
+   PAGE-LEVEL OVERRIDES (only when plugin page is active)
+   ============================================ */
+body.local-reblibrary-page .main-inner {
     max-width: 100% !important;
     margin-top: 0 !important;
     padding: 0 !important;
 }
 
-#page-header *{
+body.local-reblibrary-page #page-header * {
     display: none !important;
 }
-#page-header{
-	margin: 0;
-	padding: 0 !important;
-	margin-top: 10px;
+
+body.local-reblibrary-page #page-header {
+    margin: 0;
+    padding: 0 !important;
+    margin-top: 10px;
 }
 
-#page-footer {
+body.local-reblibrary-page #page-footer {
     margin-top: 0 !important;
 }
 
 /* ============================================
-   HEADER STYLES
+   PLUGIN-SCOPED STYLES
    ============================================ */
-.reblibrary-header {
+
+/* HEADER STYLES */
+.local-reblibrary .reblibrary-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -41,24 +46,24 @@
     z-index: 1000;
 }
 
-.header-left .library-logo {
+.local-reblibrary .header-left .library-logo {
     font-size: 24px;
     font-weight: 300;
     color: #005198;
     margin: 0;
 }
 
-.header-center {
+.local-reblibrary .header-center {
     flex: 1;
     max-width: 600px;
     margin: 0 40px;
 }
 
-.search-container {
+.local-reblibrary .search-container {
     position: relative;
 }
 
-.search-container .search-icon {
+.local-reblibrary .search-container .search-icon {
     position: absolute;
     left: 15px;
     top: 50%;
@@ -66,7 +71,7 @@
     color: #999;
 }
 
-.search-input {
+.local-reblibrary .search-input {
     width: 100%;
     padding: 8px 15px 8px 40px;
     border: 1px solid #e0e0e0;
@@ -74,13 +79,13 @@
     font-size: 14px;
 }
 
-.header-right {
+.local-reblibrary .header-right {
     display: flex;
     align-items: center;
     gap: 20px;
 }
 
-.btn-subscribe {
+.local-reblibrary .btn-subscribe {
     background-color: #005198;
     color: white;
     border: none;
@@ -90,35 +95,35 @@
     cursor: pointer;
 }
 
-.btn-subscribe:hover {
+.local-reblibrary .btn-subscribe:hover {
     background-color: #003d75;
 }
 
-.user-info {
+.local-reblibrary .user-info {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.user-name {
+.local-reblibrary .user-name {
     font-size: 14px;
     color: #333;
 }
 
-.user-avatar {
+.local-reblibrary .user-avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
     overflow: hidden;
 }
 
-.user-avatar .avatar-img {
+.local-reblibrary .user-avatar .avatar-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.user-avatar .avatar-placeholder {
+.local-reblibrary .user-avatar .avatar-placeholder {
     width: 100%;
     height: 100%;
     background-color: #667eea;
@@ -129,12 +134,12 @@
     font-weight: 600;
 }
 
-.header-icons {
+.local-reblibrary .header-icons {
     display: flex;
     gap: 15px;
 }
 
-.icon-btn {
+.local-reblibrary .icon-btn {
     background: none;
     border: none;
     color: #666;
@@ -143,11 +148,11 @@
     position: relative;
 }
 
-.icon-btn:hover {
+.local-reblibrary .icon-btn:hover {
     color: #333;
 }
 
-.notification-badge {
+.local-reblibrary .notification-badge {
     position: absolute;
     top: -5px;
     right: -5px;
@@ -160,29 +165,25 @@
     text-align: center;
 }
 
-/* ============================================
-   LAYOUT STRUCTURE
-   ============================================ */
-.reblibrary-layout {
+/* LAYOUT STRUCTURE */
+.local-reblibrary .reblibrary-layout {
     display: flex;
     min-height: calc(100vh - 65px);
 }
 
-/* ============================================
-   LEFT SIDEBAR NAVIGATION
-   ============================================ */
-.reblibrary-sidebar {
+/* LEFT SIDEBAR NAVIGATION */
+.local-reblibrary .reblibrary-sidebar {
     width: 220px;
     background-color: #f8f9fa;
     padding: 30px 20px;
     border-right: 1px solid #e0e0e0;
 }
 
-.sidebar-section {
+.local-reblibrary .sidebar-section {
     margin-bottom: 30px;
 }
 
-.sidebar-heading {
+.local-reblibrary .sidebar-heading {
     font-size: 11px;
     font-weight: 700;
     color: #999;
@@ -191,17 +192,17 @@
     margin-bottom: 15px;
 }
 
-.sidebar-menu {
+.local-reblibrary .sidebar-menu {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.sidebar-item {
+.local-reblibrary .sidebar-item {
     margin-bottom: 8px;
 }
 
-.sidebar-item a {
+.local-reblibrary .sidebar-item a {
     display: flex;
     align-items: center;
     padding: 8px 12px;
@@ -212,27 +213,27 @@
     font-size: 14px;
 }
 
-.sidebar-item i {
+.local-reblibrary .sidebar-item i {
     margin-right: 10px;
     width: 20px;
     color: #999;
 }
 
-.sidebar-item a:hover {
+.local-reblibrary .sidebar-item a:hover {
     background-color: #e9ecef;
     color: #333;
 }
 
-.sidebar-item.active a {
+.local-reblibrary .sidebar-item.active a {
     background-color: #005198;
     color: white;
 }
 
-.sidebar-item.active i {
+.local-reblibrary .sidebar-item.active i {
     color: white;
 }
 
-.btn-create-shelf {
+.local-reblibrary .btn-create-shelf {
     width: 100%;
     background-color: #005198;
     color: white;
@@ -245,14 +246,12 @@
     cursor: pointer;
 }
 
-.btn-create-shelf:hover {
+.local-reblibrary .btn-create-shelf:hover {
     background-color: #003d75;
 }
 
-/* ============================================
-   MAIN CONTENT AREA
-   ============================================ */
-.reblibrary-main {
+/* MAIN CONTENT AREA */
+.local-reblibrary .reblibrary-main {
     flex: 1;
     padding: 30px;
     overflow-y: auto;
@@ -260,52 +259,52 @@
 }
 
 /* Book Sections */
-.book-section {
+.local-reblibrary .book-section {
     margin-bottom: 40px;
 }
 
-.section-header {
+.local-reblibrary .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
 }
 
-.section-title {
+.local-reblibrary .section-title {
     font-size: 20px;
     font-weight: 600;
     color: #333;
 }
 
-.section-link {
+.local-reblibrary .section-link {
     font-size: 14px;
     color: #005198;
     text-decoration: none;
 }
 
-.section-link:hover {
+.local-reblibrary .section-link:hover {
     text-decoration: underline;
 }
 
 /* Book Grid */
-.book-grid {
+.local-reblibrary .book-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 20px;
 }
 
 /* Book Card */
-.book-card {
+.local-reblibrary .book-card {
     position: relative;
     cursor: pointer;
     transition: transform 0.2s;
 }
 
-.book-card:hover {
+.local-reblibrary .book-card:hover {
     transform: translateY(-5px);
 }
 
-.book-cover {
+.local-reblibrary .book-cover {
     position: relative;
     width: 100%;
     padding-top: 150%;
@@ -315,7 +314,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.book-cover img {
+.local-reblibrary .book-cover img {
     position: absolute;
     top: 0;
     left: 0;
@@ -324,7 +323,7 @@
     object-fit: cover;
 }
 
-.book-actions {
+.local-reblibrary .book-actions {
     position: absolute;
     top: 10px;
     right: 10px;
@@ -334,11 +333,11 @@
     transition: opacity 0.2s;
 }
 
-.book-card:hover .book-actions {
+.local-reblibrary .book-card:hover .book-actions {
     opacity: 1;
 }
 
-.action-btn {
+.local-reblibrary .action-btn {
     width: 32px;
     height: 32px;
     background-color: rgba(255, 255, 255, 0.9);
@@ -351,15 +350,15 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.action-btn:hover {
+.local-reblibrary .action-btn:hover {
     background-color: white;
 }
 
-.book-info {
+.local-reblibrary .book-info {
     margin-top: 10px;
 }
 
-.book-title {
+.local-reblibrary .book-title {
     font-size: 14px;
     font-weight: 600;
     color: #333;
@@ -371,37 +370,35 @@
     -webkit-box-orient: vertical;
 }
 
-.book-author {
+.local-reblibrary .book-author {
     font-size: 12px;
     color: #666;
     margin-bottom: 6px;
 }
 
-.book-rating {
+.local-reblibrary .book-rating {
     display: flex;
     gap: 2px;
 }
 
-.star {
+.local-reblibrary .star {
     color: #ffc107;
     font-size: 12px;
 }
 
-.star.empty {
+.local-reblibrary .star.empty {
     color: #ddd;
 }
 
-/* ============================================
-   RIGHT SIDEBAR (FRIENDS)
-   ============================================ */
-.reblibrary-friends {
+/* RIGHT SIDEBAR (FRIENDS) */
+.local-reblibrary .reblibrary-friends {
     width: 260px;
     background-color: #f8f9fa;
     padding: 30px 20px;
     border-left: 1px solid #e0e0e0;
 }
 
-.friends-heading {
+.local-reblibrary .friends-heading {
     font-size: 11px;
     font-weight: 700;
     color: #999;
@@ -410,13 +407,13 @@
     margin-bottom: 20px;
 }
 
-.friend-list {
+.local-reblibrary .friend-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.friend-item {
+.local-reblibrary .friend-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -424,11 +421,11 @@
     border-bottom: 1px solid #e0e0e0;
 }
 
-.friend-item:last-child {
+.local-reblibrary .friend-item:last-child {
     border-bottom: none;
 }
 
-.friend-avatar {
+.local-reblibrary .friend-avatar {
     width: 48px;
     height: 48px;
     border-radius: 50%;
@@ -436,25 +433,25 @@
     flex-shrink: 0;
 }
 
-.friend-avatar img {
+.local-reblibrary .friend-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.friend-info {
+.local-reblibrary .friend-info {
     flex: 1;
     min-width: 0;
 }
 
-.friend-name {
+.local-reblibrary .friend-name {
     font-size: 14px;
     font-weight: 600;
     color: #333;
     margin-bottom: 2px;
 }
 
-.friend-reading {
+.local-reblibrary .friend-reading {
     font-size: 12px;
     color: #666;
     overflow: hidden;
@@ -462,14 +459,12 @@
     white-space: nowrap;
 }
 
-/* ============================================
-   ADMIN SECTION STYLES
-   ============================================ */
-.admin-section {
+/* ADMIN SECTION STYLES */
+.local-reblibrary .admin-section {
     padding: 20px 0;
 }
 
-.admin-section .section-title {
+.local-reblibrary .admin-section .section-title {
     font-size: 24px;
     font-weight: 600;
     color: #333;
@@ -477,47 +472,47 @@
 }
 
 /* Stats Cards */
-.stats-card {
+.local-reblibrary .stats-card {
     text-align: center;
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s;
 }
 
-.stats-card:hover {
+.local-reblibrary .stats-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.stats-card .card-body {
+.local-reblibrary .stats-card .card-body {
     padding: 25px 15px;
 }
 
-.stats-icon {
+.local-reblibrary .stats-icon {
     font-size: 36px;
     color: #005198;
     margin-bottom: 15px;
 }
 
-.stats-number {
+.local-reblibrary .stats-number {
     font-size: 32px;
     font-weight: 700;
     color: #005198;
     margin-bottom: 8px;
 }
 
-.stats-label {
+.local-reblibrary .stats-label {
     font-size: 14px;
     color: #666;
     margin-bottom: 0;
 }
 
 /* Bootstrap Tabs Override */
-.nav-tabs {
+.local-reblibrary .nav-tabs {
     border-bottom: 2px solid #e0e0e0;
 }
 
-.nav-tabs .nav-link {
+.local-reblibrary .nav-tabs .nav-link {
     border: none;
     color: #666;
     font-weight: 500;
@@ -527,27 +522,27 @@
     transition: all 0.2s;
 }
 
-.nav-tabs .nav-link:hover {
+.local-reblibrary .nav-tabs .nav-link:hover {
     border-color: transparent;
     color: #005198;
 }
 
-.nav-tabs .nav-link.active {
+.local-reblibrary .nav-tabs .nav-link.active {
     color: #005198;
     background-color: transparent;
     border-color: transparent transparent #005198;
 }
 
-.tab-content {
+.local-reblibrary .tab-content {
     padding: 20px 0;
 }
 
 /* Table Styles */
-.table {
+.local-reblibrary .table {
     margin-top: 15px;
 }
 
-.table thead th {
+.local-reblibrary .table thead th {
     background-color: #f8f9fa;
     color: #333;
     font-weight: 600;
@@ -555,126 +550,227 @@
     padding: 12px;
 }
 
-.table tbody tr {
+.local-reblibrary .table tbody tr {
     transition: background-color 0.2s;
 }
 
-.table tbody tr:hover {
+.local-reblibrary .table tbody tr:hover {
     background-color: #f8f9fa;
 }
 
-.table tbody td {
+.local-reblibrary .table tbody td {
     padding: 12px;
     vertical-align: middle;
 }
 
 /* Action Buttons */
-.btn-sm {
+.local-reblibrary .btn-sm {
     padding: 5px 12px;
     font-size: 13px;
     margin-right: 5px;
 }
 
-.btn-primary {
+.local-reblibrary .btn-primary {
     background-color: #005198;
     border-color: #005198;
 }
 
-.btn-primary:hover {
+.local-reblibrary .btn-primary:hover {
     background-color: #003d75;
     border-color: #003d75;
 }
 
-.btn-warning {
+.local-reblibrary .btn-warning {
     background-color: #ffc107;
     border-color: #ffc107;
     color: #000;
 }
 
-.btn-warning:hover {
+.local-reblibrary .btn-warning:hover {
     background-color: #e0a800;
     border-color: #e0a800;
 }
 
-.btn-danger {
+.local-reblibrary .btn-danger {
     background-color: #dc3545;
     border-color: #dc3545;
 }
 
-.btn-danger:hover {
+.local-reblibrary .btn-danger:hover {
     background-color: #c82333;
     border-color: #c82333;
 }
 
-/* ============================================
-   RESPONSIVE DESIGN
-   ============================================ */
+/* LOADING SKELETON */
+.local-reblibrary .loading-skeleton {
+    display: flex;
+    min-height: 100vh;
+    background: white;
+}
+
+.local-reblibrary .skeleton-sidebar {
+    width: 220px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #e0e0e0;
+    padding: 30px 20px;
+}
+
+.local-reblibrary .skeleton-main {
+    flex: 1;
+    padding: 30px;
+}
+
+.local-reblibrary .skeleton-bar {
+    background: #e0e0e0;
+    border-radius: 0.25rem;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.local-reblibrary .skeleton-heading {
+    height: 0.75rem;
+    width: 60%;
+    margin-bottom: 1rem;
+}
+
+.local-reblibrary .skeleton-menu-item {
+    height: 2rem;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.local-reblibrary .skeleton-section {
+    margin-bottom: 2rem;
+}
+
+.local-reblibrary .skeleton-title {
+    height: 2rem;
+    width: 40%;
+    margin-bottom: 1.5rem;
+}
+
+.local-reblibrary .skeleton-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.local-reblibrary .skeleton-stats-card {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.local-reblibrary .skeleton-icon {
+    height: 2.25rem;
+    width: 2.25rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+}
+
+.local-reblibrary .skeleton-number {
+    height: 2rem;
+    width: 60%;
+    margin: 0 auto 0.5rem;
+}
+
+.local-reblibrary .skeleton-label {
+    height: 0.875rem;
+    width: 80%;
+    margin: 0 auto;
+}
+
+.local-reblibrary .skeleton-alert {
+    height: 6rem;
+    width: 100%;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* RESPONSIVE DESIGN */
 @media (max-width: 992px) {
-    .reblibrary-friends {
+    .local-reblibrary .reblibrary-friends {
         display: none;
     }
 
-    .book-grid {
+    .local-reblibrary .book-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
 }
 
 @media (max-width: 768px) {
-    .reblibrary-sidebar {
+    .local-reblibrary .reblibrary-sidebar {
         width: 180px;
     }
 
-    .header-center {
+    .local-reblibrary .header-center {
         margin: 0 20px;
     }
 
-    .user-name {
+    .local-reblibrary .user-name {
         display: none;
     }
 
-    .stats-card .stats-number {
+    .local-reblibrary .stats-card .stats-number {
         font-size: 24px;
     }
 
-    .stats-icon {
+    .local-reblibrary .stats-icon {
         font-size: 28px;
+    }
+
+    .local-reblibrary .skeleton-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (max-width: 576px) {
-    .reblibrary-layout {
+    .local-reblibrary .reblibrary-layout {
         flex-direction: column;
     }
 
-    .reblibrary-sidebar {
+    .local-reblibrary .reblibrary-sidebar {
         width: 100%;
         padding: 15px;
     }
 
-    .sidebar-section {
+    .local-reblibrary .sidebar-section {
         margin-bottom: 15px;
     }
 
-    .reblibrary-main {
+    .local-reblibrary .reblibrary-main {
         padding: 15px;
     }
 
-    .book-grid {
+    .local-reblibrary .book-grid {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 15px;
     }
 
-    .nav-tabs .nav-link {
+    .local-reblibrary .nav-tabs .nav-link {
         padding: 8px 12px;
         font-size: 13px;
     }
 
-    .table {
+    .local-reblibrary .table {
         font-size: 13px;
     }
 
-    .btn-sm {
+    .local-reblibrary .btn-sm {
         padding: 4px 8px;
         font-size: 12px;
+    }
+
+    .local-reblibrary .skeleton-stats-grid {
+        grid-template-columns: 1fr;
     }
 }
