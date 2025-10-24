@@ -1,0 +1,83 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Categories management page.
+ *
+ * This page is accessible only to users with system-level admin capabilities.
+ * It provides a Preact-based interface for managing hierarchical resource categories.
+ *
+ * @package    local_reblibrary
+ * @copyright  2025 Rwanda Education Board
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+require_once('../../../config.php');
+
+// Require login and admin capability.
+require_login();
+
+// Set up the page context.
+$context = context_system::instance();
+$PAGE->set_context($context);
+
+// Check for admin capability - only site admins can access.
+require_capability('moodle/site:config', $context);
+
+$PAGE->set_url(new moodle_url('/local/reblibrary/admin/categories.php'));
+$PAGE->set_pagelayout('standard');
+$PAGE->set_title(get_string('categories_page_title', 'local_reblibrary'));
+$PAGE->set_heading(get_string('categories_page_heading', 'local_reblibrary'));
+
+// Add body classes for plugin-specific page styling.
+$PAGE->add_body_class('local-reblibrary-plugin');
+$PAGE->add_body_class('local-reblibrary-admin-page');
+$PAGE->add_body_class('local-reblibrary-categories');
+
+// Load custom CSS.
+$PAGE->requires->css('/local/reblibrary/styles.css');
+
+// Load custom JavaScript module.
+$PAGE->requires->js_call_amd('local_reblibrary/categories', 'init');
+
+// Add breadcrumb navigation.
+$PAGE->navbar->add(get_string('pluginname', 'local_reblibrary'));
+$PAGE->navbar->add(get_string('categories_page_title', 'local_reblibrary'));
+
+// Fetch categories data from database.
+global $DB;
+
+// Get all categories with their parent information.
+$categories = $DB->get_records('local_reblibrary_categories', null, 'category_name ASC');
+$categoriesdata = [];
+foreach ($categories as $category) {
+    $categoriesdata[] = [
+        'id' => $category->id,
+        'category_name' => $category->category_name,
+        'parent_category_id' => $category->parent_category_id,
+        'description' => $category->description ?? '',
+    ];
+}
+
+// Prepare data for template (only JSON-encoded data for Preact).
+$templatecontext = [
+    'categories_json' => json_encode($categoriesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+];
+
+// Output the page.
+echo $OUTPUT->header();
+echo $OUTPUT->render_from_template('local_reblibrary/admin_categories', $templatecontext);
+echo $OUTPUT->footer();

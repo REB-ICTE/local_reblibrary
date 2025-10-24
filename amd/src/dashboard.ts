@@ -22,7 +22,7 @@
  */
 
 import { h, render } from 'preact';
-import App from "./app.tsx";
+import App from "./app";
 import { userSignal, statsSignal } from './store';
 import type { UserData, StatsData } from './types';
 import './styles.css';

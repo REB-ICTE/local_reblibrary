@@ -30,8 +30,8 @@ export default defineConfig({
       // Multiple entry points
       input: entryPoints,
 
-      // Ensure external dependencies are bundled (default for library mode)
-      external: [],
+      // Mark Moodle core modules as external (loaded by RequireJS)
+      external: ['core/ajax'],
 
       output: {
         // AMD-specific output options

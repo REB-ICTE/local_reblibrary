@@ -1,24 +1,14 @@
 import { h } from "preact";
-import Sidebar from "./components/Sidebar";
-import Dashboard from "./components/Dashboard";
+import Sidebar from "./components/shared/Sidebar";
+import Dashboard from "./components/admin/Dashboard";
 import { statsSignal } from "./store";
+import { getAdminMenuItems } from "./config/admin-menu";
+import { getLibraryMenuItems } from "./config/library-menu";
 
 export default function App() {
-	// Mock data for admin menu
-	const adminMenuItems = [
-		{ name: "Dashboard", url: "#", icon: "fa fa-tachometer-alt", active: true },
-		{ name: "Education Structure", url: "#", icon: "fa fa-graduation-cap", active: false },
-		{ name: "Resources", url: "#", icon: "fa fa-book", active: false },
-		{ name: "Categories", url: "#", icon: "fa fa-tags", active: false },
-		{ name: "Assignments", url: "#", icon: "fa fa-link", active: false },
-	];
-
-	// Mock data for library menu
-	const libraryMenuItems = [
-		{ name: "Top Books", url: "#", icon: "fa fa-star", active: false },
-		{ name: "Discover", url: "#", icon: "fa fa-compass", active: false },
-		{ name: "Categories", url: "#", icon: "fa fa-th-large", active: false },
-	];
+	// Get menu items from configuration
+	const adminMenuItems = getAdminMenuItems('dashboard');
+	const libraryMenuItems = getLibraryMenuItems();
 
 	return (
 		<div className="flex min-h-screen bg-white">

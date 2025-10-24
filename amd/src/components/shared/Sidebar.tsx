@@ -27,7 +27,7 @@ export default function Sidebar({ adminMenuItems, libraryMenuItems }: SidebarPro
                                 href={item.url}
                                 className={`flex items-center px-3 py-2 rounded text-sm transition-colors ${
                                     item.active
-                                        ? "bg-blue-600 text-white"
+                                        ? "bg-reb-blue text-white"
                                         : "text-gray-700 hover:bg-gray-200"
                                 }`}
                             >
@@ -50,7 +50,7 @@ export default function Sidebar({ adminMenuItems, libraryMenuItems }: SidebarPro
                                 href={item.url}
                                 className={`flex items-center px-3 py-2 rounded text-sm transition-colors ${
                                     item.active
-                                        ? "bg-blue-600 text-white"
+                                        ? "bg-reb-blue text-white"
                                         : "text-gray-700 hover:bg-gray-200"
                                 }`}
                             >

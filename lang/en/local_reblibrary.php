@@ -115,3 +115,22 @@ $string['success_deleted'] = 'Record deleted successfully';
 $string['confirm_delete'] = 'Confirm Deletion';
 $string['confirm_delete_level'] = 'Are you sure you want to delete the education level "{$a}"?';
 $string['areyousure'] = 'Are you sure?';
+
+// Education structure page.
+$string['ed_structure_page_title'] = 'Education Structure Management';
+$string['ed_structure_page_heading'] = 'Education Structure Management';
+
+// Education structure error messages.
+$string['error_duplicate_sublevel_name'] = 'A sublevel with this name already exists';
+$string['error_duplicate_class_name'] = 'A class with this name already exists';
+$string['error_duplicate_class_code'] = 'A class with this code already exists';
+$string['error_duplicate_section_code'] = 'A section with this code already exists';
+
+// Categories page.
+$string['categories_page_title'] = 'Categories Management';
+$string['categories_page_heading'] = 'Resource Categories Management';
+
+// Categories error messages.
+$string['invalidparentcategory'] = 'The parent category does not exist';
+$string['cannotbeparentofself'] = 'A category cannot be its own parent';
+$string['categoryhaschildren'] = 'Cannot delete category that has subcategories';

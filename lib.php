@@ -73,7 +73,7 @@ function local_reblibrary_extend_settings_navigation(settings_navigation $naviga
     if (has_capability('moodle/site:config', $systemcontext)) {
         // Try to add to site administration if available.
         if ($settingnode = $navigation->find('siteadministration', navigation_node::TYPE_SITE_ADMIN)) {
-            $adminurl = new moodle_url('/local/reblibrary/admin.php');
+            $adminurl = new moodle_url('/local/reblibrary/admin/index.php');
             $adminnode = navigation_node::create(
                 get_string('nav_admin', 'local_reblibrary'),
                 $adminurl,

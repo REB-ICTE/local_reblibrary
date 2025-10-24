@@ -1,8 +1,8 @@
 import { h } from "preact";
 import { useEffect } from "preact/hooks";
 import StatsCard from "./StatsCard";
-import { loadResources } from "../services/resource-store";
-import { statsSignal, loadingSignal, errorSignal } from "../store";
+import { loadResources } from "../../services/resource-store";
+import { statsSignal, loadingSignal, errorSignal } from "../../store";
 
 interface DashboardProps {
     stats: {
@@ -63,11 +63,11 @@ export default function Dashboard({ stats }: DashboardProps) {
             )}
 
             {/* Welcome Message */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h5 className="text-lg font-semibold text-blue-800 mb-2">
+            <div className="bg-reb-blue-50 border border-reb-blue-200 rounded-lg p-4">
+                <h5 className="text-lg font-semibold text-reb-blue-800 mb-2">
                     Welcome to REB Library Administration
                 </h5>
-                <p className="text-blue-700">
+                <p className="text-reb-blue-700">
                     Use the sidebar menu to manage education structure, resources, categories, and assignments.
                 </p>
             </div>

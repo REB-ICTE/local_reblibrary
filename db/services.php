@@ -77,4 +77,201 @@ $functions = [
         'capabilities' => 'local/reblibrary:manageresources',
     ],
 
+    // Education structure web services.
+
+    // Education levels.
+    'local_reblibrary_get_all_levels' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'get_all_levels',
+        'classpath' => '',
+        'description' => 'Get all education levels',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_create_level' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'create_level',
+        'classpath' => '',
+        'description' => 'Create a new education level',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_update_level' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'update_level',
+        'classpath' => '',
+        'description' => 'Update an education level',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_delete_level' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'delete_level',
+        'classpath' => '',
+        'description' => 'Delete an education level',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    // Education sublevels.
+    'local_reblibrary_get_all_sublevels' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'get_all_sublevels',
+        'classpath' => '',
+        'description' => 'Get all education sublevels',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_create_sublevel' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'create_sublevel',
+        'classpath' => '',
+        'description' => 'Create a new education sublevel',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_update_sublevel' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'update_sublevel',
+        'classpath' => '',
+        'description' => 'Update an education sublevel',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_delete_sublevel' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'delete_sublevel',
+        'classpath' => '',
+        'description' => 'Delete an education sublevel',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    // Classes.
+    'local_reblibrary_get_all_classes' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'get_all_classes',
+        'classpath' => '',
+        'description' => 'Get all classes',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_create_class' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'create_class',
+        'classpath' => '',
+        'description' => 'Create a new class',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_update_class' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'update_class',
+        'classpath' => '',
+        'description' => 'Update a class',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_delete_class' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'delete_class',
+        'classpath' => '',
+        'description' => 'Delete a class',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    // Sections.
+    'local_reblibrary_get_all_sections' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'get_all_sections',
+        'classpath' => '',
+        'description' => 'Get all sections',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_create_section' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'create_section',
+        'classpath' => '',
+        'description' => 'Create a new section',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_update_section' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'update_section',
+        'classpath' => '',
+        'description' => 'Update a section',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_delete_section' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'delete_section',
+        'classpath' => '',
+        'description' => 'Delete a section',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    // Categories web services.
+    'local_reblibrary_create_category' => [
+        'classname' => 'local_reblibrary\external\categories',
+        'methodname' => 'create_category',
+        'classpath' => '',
+        'description' => 'Create a new category',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_update_category' => [
+        'classname' => 'local_reblibrary\external\categories',
+        'methodname' => 'update_category',
+        'classpath' => '',
+        'description' => 'Update a category',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_delete_category' => [
+        'classname' => 'local_reblibrary\external\categories',
+        'methodname' => 'delete_category',
+        'classpath' => '',
+        'description' => 'Delete a category',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
 ];

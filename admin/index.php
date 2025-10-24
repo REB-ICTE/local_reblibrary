@@ -15,33 +15,37 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * REB Library home page.
+ * REB Library admin dashboard.
  *
- * This page displays the library homepage accessible to both
- * authenticated users and guests.
+ * This page displays the admin dashboard accessible only to users
+ * with system-level admin capabilities.
  *
  * @package    local_reblibrary
- * @copyright  2025 Your Name
+ * @copyright  2025 Rwanda Education Board
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require_once('../../../config.php');
 require_once($CFG->dirroot . '/local/reblibrary/lib.php');
 
-// Allow both authenticated users and guests to access this page.
-require_login(null, true);
+// Require login and admin capability.
+require_login();
 
 // Set up the page context.
 $context = context_system::instance();
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/reblibrary/index.php'));
+
+// Check for admin capability - only site admins can access.
+require_capability('moodle/site:config', $context);
+
+$PAGE->set_url(new moodle_url('/local/reblibrary/admin/index.php'));
 $PAGE->set_pagelayout('standard');
-$PAGE->set_title(get_string('librarypage_title', 'local_reblibrary'));
-$PAGE->set_heading(get_string('librarypage_heading', 'local_reblibrary'));
+$PAGE->set_title(get_string('adminpage_title', 'local_reblibrary'));
+$PAGE->set_heading(get_string('adminpage_heading', 'local_reblibrary'));
 
 // Add body classes for plugin-specific page styling.
 $PAGE->add_body_class('local-reblibrary-plugin');
-$PAGE->add_body_class('local-reblibrary-page');
+$PAGE->add_body_class('local-reblibrary-admin-page');
 
 // Load custom CSS.
 $PAGE->requires->css('/local/reblibrary/styles.css');
@@ -51,6 +55,7 @@ $PAGE->requires->js_call_amd('local_reblibrary/dashboard', 'init');
 
 // Add breadcrumb navigation.
 $PAGE->navbar->add(get_string('pluginname', 'local_reblibrary'));
+$PAGE->navbar->add(get_string('admin_nav_dashboard', 'local_reblibrary'));
 
 // Prepare user data for Preact (via data attributes).
 $userroles = [];
@@ -71,10 +76,10 @@ $userdata = [
 // Prepare stats data for Preact (via data attributes).
 // TODO: Replace with real database queries.
 $statsdata = [
-    'totalResources' => 1000,  // Example: $DB->count_records('local_reblibrary_resources')
-    'totalAuthors' => 89,       // Example: $DB->count_records('local_reblibrary_authors')
-    'totalCategories' => 24,    // Example: $DB->count_records('local_reblibrary_categories')
-    'totalClasses' => 156,      // Example: $DB->count_records('local_reblibrary_classes')
+    'totalResources' => $DB->count_records('local_reblibrary_resources'),
+    'totalAuthors' => $DB->count_records('local_reblibrary_authors'),
+    'totalCategories' => $DB->count_records('local_reblibrary_categories'),
+    'totalClasses' => $DB->count_records('local_reblibrary_classes'),
 ];
 
 // Prepare data for template (only JSON-encoded data for Preact).
