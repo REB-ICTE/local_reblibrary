@@ -134,3 +134,45 @@ $string['categories_page_heading'] = 'Resource Categories Management';
 $string['invalidparentcategory'] = 'The parent category does not exist';
 $string['cannotbeparentofself'] = 'A category cannot be its own parent';
 $string['categoryhaschildren'] = 'Cannot delete category that has subcategories';
+
+// Resources page.
+$string['resources_page_title'] = 'Resources & Authors Management';
+$string['resources_page_heading'] = 'Resources & Authors Management';
+
+// Resources tab.
+$string['tab_resources'] = 'Resources';
+$string['tab_authors'] = 'Authors';
+$string['add_resource'] = 'Add Resource';
+$string['edit_resource'] = 'Edit Resource';
+$string['delete_resource'] = 'Delete Resource';
+$string['resource_title'] = 'Title';
+$string['resource_isbn'] = 'ISBN';
+$string['resource_author'] = 'Author';
+$string['resource_description'] = 'Description';
+$string['resource_cover_image_url'] = 'Cover Image URL';
+$string['resource_file_url'] = 'File URL';
+$string['resource_created_at'] = 'Created';
+$string['confirm_delete_resource'] = 'Are you sure you want to delete the resource "{$a}"?';
+
+// Authors tab.
+$string['add_author'] = 'Add Author';
+$string['edit_author'] = 'Edit Author';
+$string['delete_author'] = 'Delete Author';
+$string['author_first_name'] = 'First Name';
+$string['author_last_name'] = 'Last Name';
+$string['author_bio'] = 'Bio';
+$string['author_full_name'] = 'Name';
+$string['confirm_delete_author'] = 'Are you sure you want to delete the author "{$a}"?';
+
+// Form buttons.
+$string['save'] = 'Save';
+$string['cancel'] = 'Cancel';
+$string['delete'] = 'Delete';
+$string['edit'] = 'Edit';
+$string['actions'] = 'Actions';
+
+// Messages.
+$string['no_resources'] = 'No resources found. Click "Add Resource" to create one.';
+$string['no_authors'] = 'No authors found. Click "Add Author" to create one.';
+$string['loading'] = 'Loading...';
+$string['search_placeholder'] = 'Search...';

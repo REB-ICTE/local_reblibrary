@@ -274,4 +274,55 @@ $functions = [
         'capabilities' => 'moodle/site:config',
     ],
 
+    // Authors web services.
+    'local_reblibrary_get_all_authors' => [
+        'classname' => 'local_reblibrary\external\authors',
+        'methodname' => 'get_all',
+        'classpath' => '',
+        'description' => 'Get all authors',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_get_author_by_id' => [
+        'classname' => 'local_reblibrary\external\authors',
+        'methodname' => 'get_by_id',
+        'classpath' => '',
+        'description' => 'Get author by ID',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_create_author' => [
+        'classname' => 'local_reblibrary\external\authors',
+        'methodname' => 'create',
+        'classpath' => '',
+        'description' => 'Create a new author',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
+    'local_reblibrary_update_author' => [
+        'classname' => 'local_reblibrary\external\authors',
+        'methodname' => 'update',
+        'classpath' => '',
+        'description' => 'Update an author',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
+    'local_reblibrary_delete_author' => [
+        'classname' => 'local_reblibrary\external\authors',
+        'methodname' => 'delete',
+        'classpath' => '',
+        'description' => 'Delete an author',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
 ];

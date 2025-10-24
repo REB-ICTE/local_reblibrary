@@ -1,4 +1,4 @@
-define(["exports","./assets/styles-B-QKMb-0","core/ajax","./assets/library-menu-CSGd4r3Y"],(function(v,e,b,y){"use strict";/**
+define(["exports","./assets/styles-CBpHq8jy","core/ajax","./assets/library-menu-CSGd4r3Y"],(function(v,e,b,y){"use strict";/**
  * Service for category management API calls.
  *
  * @package    local_reblibrary

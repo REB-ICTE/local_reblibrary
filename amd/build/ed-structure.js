@@ -1,4 +1,4 @@
-define(["exports","./assets/styles-B-QKMb-0"],(function(k,e){"use strict";/**
+define(["exports","./assets/styles-CBpHq8jy"],(function(k,e){"use strict";/**
  * Education structure web service client.
  * Provides methods to interact with local_reblibrary education structure web services.
  *
