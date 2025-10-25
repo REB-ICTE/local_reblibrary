@@ -119,7 +119,7 @@ export default function LevelTab() {
                                     e.g., "Pre-primary", "Primary", "Secondary"
                                 </p>
                             </div>
-                            <div className="flex space-x-3">
+                            <div className="flex gap-2">
                                 <button
                                     type="submit"
                                     disabled={loadingSignal.value}
@@ -168,21 +168,23 @@ export default function LevelTab() {
                                         <tr key={level.id} className="border-b border-gray-200 hover:bg-gray-50">
                                             <td className="py-3 px-4 text-gray-600">{level.id}</td>
                                             <td className="py-3 px-4 text-gray-900 font-medium">{level.level_name}</td>
-                                            <td className="py-3 px-4 text-right space-x-2">
-                                                <button
-                                                    onClick={() => handleEdit(level)}
-                                                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
-                                                >
-                                                    <i className="fa fa-edit mr-1"></i>
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(level)}
-                                                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm"
-                                                >
-                                                    <i className="fa fa-trash mr-1"></i>
-                                                    Delete
-                                                </button>
+                                            <td className="py-3 px-4">
+                                                <div className="flex gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => handleEdit(level)}
+                                                        className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
+                                                    >
+                                                        <i className="fa fa-edit mr-1"></i>
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(level)}
+                                                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm"
+                                                    >
+                                                        <i className="fa fa-trash mr-1"></i>
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

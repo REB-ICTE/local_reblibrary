@@ -300,7 +300,7 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                             {editingResource ? 'Edit Resource' : 'Add Resource'}
                                         </h3>
                                         <form onSubmit={handleSubmitResource}>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         Title <span className="text-red-500">*</span>
@@ -387,7 +387,7 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                 </div>
                                             </div>
 
-                                            <div className="flex space-x-3 mt-4">
+                                            <div className="flex gap-2 mt-4">
                                                 <button
                                                     type="submit"
                                                     disabled={loadingSignal.value}
@@ -453,7 +453,7 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                     <td className="py-3 px-4 text-gray-600 text-sm">{resource.isbn || '-'}</td>
                                                     <td className="py-3 px-4 text-gray-700">{getAuthorName(resource.author_id)}</td>
                                                     <td className="py-3 px-4 text-gray-600 text-sm">{formatDate(resource.created_at)}</td>
-                                                    <td className="py-3 px-4 text-right space-x-2">
+                                                    <td className="py-3 px-4"><div className="flex gap-2 justify-end">
                                                         <button
                                                             onClick={() => handleEditResource(resource)}
                                                             className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
@@ -468,7 +468,7 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                             <i className="fa fa-trash mr-1"></i>
                                                             Delete
                                                         </button>
-                                                    </td>
+                                                    </div></td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -505,7 +505,7 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                             {editingAuthor ? 'Edit Author' : 'Add Author'}
                                         </h3>
                                         <form onSubmit={handleSubmitAuthor}>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         First Name <span className="text-red-500">*</span>
@@ -548,7 +548,7 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                 </div>
                                             </div>
 
-                                            <div className="flex space-x-3 mt-4">
+                                            <div className="flex gap-2 mt-4">
                                                 <button
                                                     type="submit"
                                                     disabled={loadingSignal.value}
@@ -605,7 +605,7 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                                     <span className="line-clamp-2">{author.bio}</span>
                                                                 ) : '-'}
                                                             </td>
-                                                            <td className="py-3 px-4 text-right space-x-2">
+                                                            <td className="py-3 px-4"><div className="flex gap-2 justify-end">
                                                                 <button
                                                                     onClick={() => handleEditAuthor(author)}
                                                                     className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
@@ -620,7 +620,7 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                                     <i className="fa fa-trash mr-1"></i>
                                                                     Delete
                                                                 </button>
-                                                            </td>
+                                                            </div></td>
                                                         </tr>
                                                     ))}
                                                 </tbody>

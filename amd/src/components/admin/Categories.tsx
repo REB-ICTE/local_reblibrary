@@ -194,7 +194,7 @@ export default function Categories({ initialCategories }: CategoriesProps) {
                                             />
                                         </div>
 
-                                        <div className="flex space-x-3">
+                                        <div className="flex gap-2">
                                             <button
                                                 type="submit"
                                                 disabled={loadingSignal.value}
@@ -247,21 +247,23 @@ export default function Categories({ initialCategories }: CategoriesProps) {
                                                         <td className="py-3 px-4 text-gray-900 font-medium">{category.category_name}</td>
                                                         <td className="py-3 px-4 text-gray-700">{getCategoryName(category.parent_category_id)}</td>
                                                         <td className="py-3 px-4 text-gray-600 text-sm">{category.description || '-'}</td>
-                                                        <td className="py-3 px-4 text-right space-x-2">
-                                                            <button
-                                                                onClick={() => handleEdit(category)}
-                                                                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
-                                                            >
-                                                                <i className="fa fa-edit mr-1"></i>
-                                                                Edit
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(category)}
-                                                                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm"
-                                                            >
-                                                                <i className="fa fa-trash mr-1"></i>
-                                                                Delete
-                                                            </button>
+                                                        <td className="py-3 px-4">
+                                                            <div className="flex gap-2 justify-end">
+                                                                <button
+                                                                    onClick={() => handleEdit(category)}
+                                                                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
+                                                                >
+                                                                    <i className="fa fa-edit mr-1"></i>
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDelete(category)}
+                                                                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm"
+                                                                >
+                                                                    <i className="fa fa-trash mr-1"></i>
+                                                                    Delete
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}

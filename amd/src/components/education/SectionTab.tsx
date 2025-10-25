@@ -181,7 +181,7 @@ export default function SectionTab() {
                                 </p>
                             </div>
 
-                            <div className="flex space-x-3">
+                            <div className="flex gap-2">
                                 <button
                                     type="submit"
                                     disabled={loadingSignal.value}
@@ -254,21 +254,23 @@ export default function SectionTab() {
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4 text-gray-700">{getSublevelName(section.sublevel_id)}</td>
-                                            <td className="py-3 px-4 text-right space-x-2">
-                                                <button
-                                                    onClick={() => handleEdit(section)}
-                                                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
-                                                >
-                                                    <i className="fa fa-edit mr-1"></i>
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(section)}
-                                                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm"
-                                                >
-                                                    <i className="fa fa-trash mr-1"></i>
-                                                    Delete
-                                                </button>
+                                            <td className="py-3 px-4">
+                                                <div className="flex gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => handleEdit(section)}
+                                                        className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
+                                                    >
+                                                        <i className="fa fa-edit mr-1"></i>
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(section)}
+                                                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm"
+                                                    >
+                                                        <i className="fa fa-trash mr-1"></i>
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
