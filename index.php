@@ -15,18 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * REB Library home page.
+ * REB Library home page - Public library with all available books.
  *
- * This page displays the library homepage accessible to both
- * authenticated users and guests.
+ * This page displays all available resources in a book grid format,
+ * accessible to both authenticated users and guests.
  *
  * @package    local_reblibrary
- * @copyright  2025 Your Name
+ * @copyright  2025 Rwanda Education Board
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once('../../config.php');
-require_once($CFG->dirroot . '/local/reblibrary/lib.php');
 
 // Allow both authenticated users and guests to access this page.
 require_login(null, true);
@@ -39,51 +38,62 @@ $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('librarypage_title', 'local_reblibrary'));
 $PAGE->set_heading(get_string('librarypage_heading', 'local_reblibrary'));
 
-// Add body classes for plugin-specific page styling.
+// Add body classes for styling.
 $PAGE->add_body_class('local-reblibrary-plugin');
-$PAGE->add_body_class('local-reblibrary-page');
+$PAGE->add_body_class('local-reblibrary-home');
 
 // Load custom CSS.
 $PAGE->requires->css('/local/reblibrary/styles.css');
 
-// Load custom JavaScript module.
-$PAGE->requires->js_call_amd('local_reblibrary/dashboard', 'init');
+// Load JavaScript module for library home.
+$PAGE->requires->js_call_amd('local_reblibrary/library-home', 'init');
 
-// Add breadcrumb navigation.
-$PAGE->navbar->add(get_string('pluginname', 'local_reblibrary'));
+// Fetch all resources from database with author information.
+global $DB;
 
-// Prepare user data for Preact (via data attributes).
-$userroles = [];
-foreach (get_user_roles($context, $USER->id) as $role) {
-    $userroles[] = $role->shortname;
+$sql = "SELECT r.id, r.title, r.isbn, r.description, r.file_url, r.cover_image_url,
+               r.author_id, r.created_at,
+               CONCAT(a.first_name, ' ', a.last_name) as author_name,
+               a.first_name, a.last_name
+        FROM {local_reblibrary_resources} r
+        LEFT JOIN {local_reblibrary_authors} a ON r.author_id = a.id
+        ORDER BY r.created_at DESC";
+
+$resources = $DB->get_records_sql($sql);
+$resourcesdata = [];
+foreach ($resources as $resource) {
+    $resourcesdata[] = [
+        'id' => $resource->id,
+        'title' => $resource->title,
+        'isbn' => $resource->isbn ?? '',
+        'description' => $resource->description ?? '',
+        'file_url' => $resource->file_url ?? '',
+        'cover_image_url' => $resource->cover_image_url ?? '',
+        'author_id' => $resource->author_id,
+        'author_name' => $resource->author_name ?? 'Unknown',
+        'created_at' => $resource->created_at,
+    ];
 }
 
-$userdata = [
-    'id' => $USER->id,
-    'fullname' => fullname($USER),
-    'firstname' => $USER->firstname,
-    'lastname' => $USER->lastname,
-    'email' => $USER->email,
-    'avatar' => $OUTPUT->get_generated_image_for_id($USER->id),
-    'roles' => $userroles,
-];
+// Get all categories for filtering.
+$categories = $DB->get_records('local_reblibrary_categories', null, 'category_name ASC');
+$categoriesdata = [];
+foreach ($categories as $category) {
+    $categoriesdata[] = [
+        'id' => $category->id,
+        'category_name' => $category->category_name,
+        'parent_category_id' => $category->parent_category_id,
+        'description' => $category->description ?? '',
+    ];
+}
 
-// Prepare stats data for Preact (via data attributes).
-// TODO: Replace with real database queries.
-$statsdata = [
-    'totalResources' => 1000,  // Example: $DB->count_records('local_reblibrary_resources')
-    'totalAuthors' => 89,       // Example: $DB->count_records('local_reblibrary_authors')
-    'totalCategories' => 24,    // Example: $DB->count_records('local_reblibrary_categories')
-    'totalClasses' => 156,      // Example: $DB->count_records('local_reblibrary_classes')
-];
-
-// Prepare data for template (only JSON-encoded data for Preact).
+// Prepare data for template.
 $templatecontext = [
-    'user_data_json' => json_encode($userdata, JSON_HEX_QUOT | JSON_HEX_APOS),
-    'stats_data_json' => json_encode($statsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'resources_json' => json_encode($resourcesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'categories_json' => json_encode($categoriesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
 ];
 
 // Output the page.
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('local_reblibrary/root', $templatecontext);
+echo $OUTPUT->render_from_template('local_reblibrary/library_home', $templatecontext);
 echo $OUTPUT->footer();

@@ -6,6 +6,7 @@ import type { Author } from "../../services/authors";
 import { ResourceService, CreateResourceData, UpdateResourceData } from "../../services/resources";
 import { AuthorService, CreateAuthorData, UpdateAuthorData } from "../../services/authors";
 import Sidebar from "../shared/Sidebar";
+import Toast from "../shared/Toast";
 import { getAdminMenuItems } from "../../config/admin-menu";
 import { getLibraryMenuItems } from "../../config/library-menu";
 
@@ -246,17 +247,6 @@ export default function Resources({ initialResources, initialAuthors }: Resource
         return new Date(timestamp * 1000).toLocaleDateString();
     };
 
-    // Auto-hide success/error messages after 5 seconds
-    useEffect(() => {
-        if (successSignal.value || errorSignal.value) {
-            const timer = setTimeout(() => {
-                successSignal.value = null;
-                errorSignal.value = null;
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [successSignal.value, errorSignal.value]);
-
     return (
         <div className="flex min-h-screen bg-white">
             <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
@@ -265,20 +255,6 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                     <h1 className="text-3xl font-bold text-gray-900 mb-6">
                         Resources & Authors Management
                     </h1>
-
-                    {/* Success/Error Messages */}
-                    {successSignal.value && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                            <p className="text-green-700">{successSignal.value}</p>
-                        </div>
-                    )}
-
-                    {errorSignal.value && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                            <h5 className="text-lg font-semibold text-red-800 mb-2">Error</h5>
-                            <p className="text-red-700">{errorSignal.value}</p>
-                        </div>
-                    )}
 
                     {/* Tabs */}
                     <div className="flex border-b border-gray-200 mb-6">
@@ -307,144 +283,156 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                     {/* Resources Tab Content */}
                     {activeTab === 'resources' && (
                         <div className="bg-white rounded-lg shadow p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-semibold text-gray-800">Library Resources</h2>
-                                {!showResourceForm && (
+                            {showResourceForm ? (
+                                <>
+                                    {/* Back Button */}
                                     <button
-                                        onClick={handleAddResource}
-                                        className="bg-reb-blue text-white px-4 py-2 rounded-lg hover:bg-reb-blue-700 transition-colors"
-                                        disabled={authorsSignal.value.length === 0}
+                                        onClick={handleCancelResource}
+                                        className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
                                     >
-                                        <i className="fa fa-plus mr-2"></i>
-                                        Add Resource
+                                        <i className="fa fa-arrow-left mr-2"></i>
+                                        Back to Resources
                                     </button>
-                                )}
-                            </div>
 
-                            {authorsSignal.value.length === 0 && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                                    <p className="text-yellow-700">
-                                        <i className="fa fa-exclamation-triangle mr-2"></i>
-                                        Please add at least one author before creating resources.
-                                        Switch to the "Authors" tab to add authors.
-                                    </p>
-                                </div>
-                            )}
+                                    {/* Form Only */}
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                                            {editingResource ? 'Edit Resource' : 'Add Resource'}
+                                        </h3>
+                                        <form onSubmit={handleSubmitResource}>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Title <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={resourceFormData.title}
+                                                        onInput={(e) => setResourceFormData({ ...resourceFormData, title: (e.target as HTMLInputElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        placeholder="Resource title"
+                                                        required
+                                                    />
+                                                </div>
 
-                            {showResourceForm && (
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                        {editingResource ? 'Edit Resource' : 'Add Resource'}
-                                    </h3>
-                                    <form onSubmit={handleSubmitResource}>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Title <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={resourceFormData.title}
-                                                    onInput={(e) => setResourceFormData({ ...resourceFormData, title: (e.target as HTMLInputElement).value })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    placeholder="Resource title"
-                                                    required
-                                                />
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        ISBN
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={resourceFormData.isbn}
+                                                        onInput={(e) => setResourceFormData({ ...resourceFormData, isbn: (e.target as HTMLInputElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        placeholder="ISBN (optional)"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Author <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <select
+                                                        value={resourceFormData.author_id}
+                                                        onChange={(e) => setResourceFormData({ ...resourceFormData, author_id: parseInt((e.target as HTMLSelectElement).value) })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        required
+                                                    >
+                                                        <option value="">-- Select Author --</option>
+                                                        {authorsSignal.value.map((author) => (
+                                                            <option key={author.id} value={author.id}>
+                                                                {author.first_name} {author.last_name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Cover Image URL
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        value={resourceFormData.cover_image_url}
+                                                        onInput={(e) => setResourceFormData({ ...resourceFormData, cover_image_url: (e.target as HTMLInputElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        placeholder="https://example.com/cover.jpg"
+                                                    />
+                                                </div>
+
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        File URL
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        value={resourceFormData.file_url}
+                                                        onInput={(e) => setResourceFormData({ ...resourceFormData, file_url: (e.target as HTMLInputElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        placeholder="https://example.com/resource.pdf"
+                                                    />
+                                                </div>
+
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Description
+                                                    </label>
+                                                    <textarea
+                                                        value={resourceFormData.description}
+                                                        onInput={(e) => setResourceFormData({ ...resourceFormData, description: (e.target as HTMLTextAreaElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        placeholder="Resource description"
+                                                        rows={3}
+                                                    />
+                                                </div>
                                             </div>
 
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    ISBN
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={resourceFormData.isbn}
-                                                    onInput={(e) => setResourceFormData({ ...resourceFormData, isbn: (e.target as HTMLInputElement).value })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    placeholder="ISBN (optional)"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Author <span className="text-red-500">*</span>
-                                                </label>
-                                                <select
-                                                    value={resourceFormData.author_id}
-                                                    onChange={(e) => setResourceFormData({ ...resourceFormData, author_id: parseInt((e.target as HTMLSelectElement).value) })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    required
+                                            <div className="flex space-x-3 mt-4">
+                                                <button
+                                                    type="submit"
+                                                    disabled={loadingSignal.value}
+                                                    className="bg-reb-blue text-white px-4 py-2 rounded-lg hover:bg-reb-blue-700 transition-colors disabled:opacity-50"
                                                 >
-                                                    <option value="">-- Select Author --</option>
-                                                    {authorsSignal.value.map((author) => (
-                                                        <option key={author.id} value={author.id}>
-                                                            {author.first_name} {author.last_name}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    {loadingSignal.value ? 'Saving...' : 'Save'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelResource}
+                                                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
                                             </div>
+                                        </form>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Header with Add Button */}
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-xl font-semibold text-gray-800">Library Resources</h2>
+                                        <button
+                                            onClick={handleAddResource}
+                                            className="bg-reb-blue text-white px-4 py-2 rounded-lg hover:bg-reb-blue-700 transition-colors"
+                                            disabled={authorsSignal.value.length === 0}
+                                        >
+                                            <i className="fa fa-plus mr-2"></i>
+                                            Add Resource
+                                        </button>
+                                    </div>
 
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Cover Image URL
-                                                </label>
-                                                <input
-                                                    type="url"
-                                                    value={resourceFormData.cover_image_url}
-                                                    onInput={(e) => setResourceFormData({ ...resourceFormData, cover_image_url: (e.target as HTMLInputElement).value })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    placeholder="https://example.com/cover.jpg"
-                                                />
-                                            </div>
-
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    File URL
-                                                </label>
-                                                <input
-                                                    type="url"
-                                                    value={resourceFormData.file_url}
-                                                    onInput={(e) => setResourceFormData({ ...resourceFormData, file_url: (e.target as HTMLInputElement).value })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    placeholder="https://example.com/resource.pdf"
-                                                />
-                                            </div>
-
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Description
-                                                </label>
-                                                <textarea
-                                                    value={resourceFormData.description}
-                                                    onInput={(e) => setResourceFormData({ ...resourceFormData, description: (e.target as HTMLTextAreaElement).value })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    placeholder="Resource description"
-                                                    rows={3}
-                                                />
-                                            </div>
+                                    {authorsSignal.value.length === 0 && (
+                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                            <p className="text-yellow-700">
+                                                <i className="fa fa-exclamation-triangle mr-2"></i>
+                                                Please add at least one author before creating resources.
+                                                Switch to the "Authors" tab to add authors.
+                                            </p>
                                         </div>
+                                    )}
 
-                                        <div className="flex space-x-3 mt-4">
-                                            <button
-                                                type="submit"
-                                                disabled={loadingSignal.value}
-                                                className="bg-reb-blue text-white px-4 py-2 rounded-lg hover:bg-reb-blue-700 transition-colors disabled:opacity-50"
-                                            >
-                                                {loadingSignal.value ? 'Saving...' : 'Save'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleCancelResource}
-                                                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            )}
-
-                            {resourcesSignal.value.length > 0 ? (
+                                    {/* Table View */}
+                                    {resourcesSignal.value.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="w-full border-collapse">
                                         <thead>
@@ -486,11 +474,13 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                         </tbody>
                                     </table>
                                 </div>
-                            ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    <i className="fa fa-book text-4xl mb-4 text-gray-300"></i>
-                                    <p>No resources found. Click "Add Resource" to create one.</p>
-                                </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-500">
+                                            <i className="fa fa-book text-4xl mb-4 text-gray-300"></i>
+                                            <p>No resources found. Click "Add Resource" to create one.</p>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
@@ -498,142 +488,172 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                     {/* Authors Tab Content */}
                     {activeTab === 'authors' && (
                         <div className="bg-white rounded-lg shadow p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-semibold text-gray-800">Authors</h2>
-                                {!showAuthorForm && (
+                            {showAuthorForm ? (
+                                <>
+                                    {/* Back Button */}
                                     <button
-                                        onClick={handleAddAuthor}
-                                        className="bg-reb-blue text-white px-4 py-2 rounded-lg hover:bg-reb-blue-700 transition-colors"
+                                        onClick={handleCancelAuthor}
+                                        className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
                                     >
-                                        <i className="fa fa-plus mr-2"></i>
-                                        Add Author
+                                        <i className="fa fa-arrow-left mr-2"></i>
+                                        Back to Authors
                                     </button>
-                                )}
-                            </div>
 
-                            {showAuthorForm && (
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                        {editingAuthor ? 'Edit Author' : 'Add Author'}
-                                    </h3>
-                                    <form onSubmit={handleSubmitAuthor}>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    First Name <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={authorFormData.first_name}
-                                                    onInput={(e) => setAuthorFormData({ ...authorFormData, first_name: (e.target as HTMLInputElement).value })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    placeholder="First name"
-                                                    required
-                                                />
+                                    {/* Form Only */}
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                                            {editingAuthor ? 'Edit Author' : 'Add Author'}
+                                        </h3>
+                                        <form onSubmit={handleSubmitAuthor}>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        First Name <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={authorFormData.first_name}
+                                                        onInput={(e) => setAuthorFormData({ ...authorFormData, first_name: (e.target as HTMLInputElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        placeholder="First name"
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Last Name <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={authorFormData.last_name}
+                                                        onInput={(e) => setAuthorFormData({ ...authorFormData, last_name: (e.target as HTMLInputElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        placeholder="Last name"
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Bio
+                                                    </label>
+                                                    <textarea
+                                                        value={authorFormData.bio}
+                                                        onInput={(e) => setAuthorFormData({ ...authorFormData, bio: (e.target as HTMLTextAreaElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                        placeholder="Author biography (optional)"
+                                                        rows={3}
+                                                    />
+                                                </div>
                                             </div>
 
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Last Name <span className="text-red-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={authorFormData.last_name}
-                                                    onInput={(e) => setAuthorFormData({ ...authorFormData, last_name: (e.target as HTMLInputElement).value })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    placeholder="Last name"
-                                                    required
-                                                />
+                                            <div className="flex space-x-3 mt-4">
+                                                <button
+                                                    type="submit"
+                                                    disabled={loadingSignal.value}
+                                                    className="bg-reb-blue text-white px-4 py-2 rounded-lg hover:bg-reb-blue-700 transition-colors disabled:opacity-50"
+                                                >
+                                                    {loadingSignal.value ? 'Saving...' : 'Save'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelAuthor}
+                                                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
                                             </div>
-
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Bio
-                                                </label>
-                                                <textarea
-                                                    value={authorFormData.bio}
-                                                    onInput={(e) => setAuthorFormData({ ...authorFormData, bio: (e.target as HTMLTextAreaElement).value })}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                    placeholder="Author biography (optional)"
-                                                    rows={3}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex space-x-3 mt-4">
-                                            <button
-                                                type="submit"
-                                                disabled={loadingSignal.value}
-                                                className="bg-reb-blue text-white px-4 py-2 rounded-lg hover:bg-reb-blue-700 transition-colors disabled:opacity-50"
-                                            >
-                                                {loadingSignal.value ? 'Saving...' : 'Save'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleCancelAuthor}
-                                                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            )}
-
-                            {authorsSignal.value.length > 0 ? (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse">
-                                        <thead>
-                                            <tr className="bg-gray-50 border-b border-gray-200">
-                                                <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
-                                                <th className="text-left py-3 px-4 font-medium text-gray-700">Name</th>
-                                                <th className="text-left py-3 px-4 font-medium text-gray-700">Bio</th>
-                                                <th className="text-right py-3 px-4 font-medium text-gray-700">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {authorsSignal.value.map((author) => (
-                                                <tr key={author.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                                    <td className="py-3 px-4 text-gray-600">{author.id}</td>
-                                                    <td className="py-3 px-4 text-gray-900 font-medium">
-                                                        {author.first_name} {author.last_name}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-gray-600 text-sm">
-                                                        {author.bio ? (
-                                                            <span className="line-clamp-2">{author.bio}</span>
-                                                        ) : '-'}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right space-x-2">
-                                                        <button
-                                                            onClick={() => handleEditAuthor(author)}
-                                                            className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
-                                                        >
-                                                            <i className="fa fa-edit mr-1"></i>
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteAuthor(author)}
-                                                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm"
-                                                        >
-                                                            <i className="fa fa-trash mr-1"></i>
-                                                            Delete
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        </form>
+                                    </div>
+                                </>
                             ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    <i className="fa fa-user text-4xl mb-4 text-gray-300"></i>
-                                    <p>No authors found. Click "Add Author" to create one.</p>
-                                </div>
+                                <>
+                                    {/* Header with Add Button */}
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-xl font-semibold text-gray-800">Authors</h2>
+                                        <button
+                                            onClick={handleAddAuthor}
+                                            className="bg-reb-blue text-white px-4 py-2 rounded-lg hover:bg-reb-blue-700 transition-colors"
+                                        >
+                                            <i className="fa fa-plus mr-2"></i>
+                                            Add Author
+                                        </button>
+                                    </div>
+
+                                    {/* Table View */}
+                                    {authorsSignal.value.length > 0 ? (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full border-collapse">
+                                                <thead>
+                                                    <tr className="bg-gray-50 border-b border-gray-200">
+                                                        <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
+                                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Name</th>
+                                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Bio</th>
+                                                        <th className="text-right py-3 px-4 font-medium text-gray-700">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {authorsSignal.value.map((author) => (
+                                                        <tr key={author.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                                            <td className="py-3 px-4 text-gray-600">{author.id}</td>
+                                                            <td className="py-3 px-4 text-gray-900 font-medium">
+                                                                {author.first_name} {author.last_name}
+                                                            </td>
+                                                            <td className="py-3 px-4 text-gray-600 text-sm">
+                                                                {author.bio ? (
+                                                                    <span className="line-clamp-2">{author.bio}</span>
+                                                                ) : '-'}
+                                                            </td>
+                                                            <td className="py-3 px-4 text-right space-x-2">
+                                                                <button
+                                                                    onClick={() => handleEditAuthor(author)}
+                                                                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors text-sm"
+                                                                >
+                                                                    <i className="fa fa-edit mr-1"></i>
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteAuthor(author)}
+                                                                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm"
+                                                                >
+                                                                    <i className="fa fa-trash mr-1"></i>
+                                                                    Delete
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-500">
+                                            <i className="fa fa-user text-4xl mb-4 text-gray-300"></i>
+                                            <p>No authors found. Click "Add Author" to create one.</p>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
                 </div>
             </main>
+
+            {/* Toast Notifications */}
+            {successSignal.value && (
+                <Toast
+                    message={successSignal.value}
+                    type="success"
+                    onClose={() => successSignal.value = null}
+                />
+            )}
+            {errorSignal.value && (
+                <Toast
+                    message={errorSignal.value}
+                    type="error"
+                    onClose={() => errorSignal.value = null}
+                />
+            )}
         </div>
     );
 }

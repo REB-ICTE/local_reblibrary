@@ -13,10 +13,20 @@
 /**
  * Public library pages - Remove Moodle default header and adjust layout
  */
+
+body.local-reblibrary-page *{
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
 body.local-reblibrary-page .main-inner {
     max-width: 100% !important;
     margin-top: 0 !important;
     padding: 0 !important;
+}
+body.local-reblibrary-page div[role=main]{
+	padding-right: 0 !important;
+	padding-left: 0 !important;
 }
 
 body.local-reblibrary-page #page-header * {

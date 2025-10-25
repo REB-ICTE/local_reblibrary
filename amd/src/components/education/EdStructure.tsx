@@ -3,6 +3,7 @@ import { useState, useEffect } from "preact/hooks";
 import { signal } from "@preact/signals";
 import type { EduLevel, EduSublevel, EduClass, EduSection } from "../../services/edu-structure";
 import Sidebar from "../shared/Sidebar";
+import Toast from "../shared/Toast";
 import LevelTab from "./LevelTab";
 import SublevelTab from "./SublevelTab";
 import ClassTab from "./ClassTab";
@@ -78,17 +79,6 @@ export default function EdStructure({
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
 
-    // Auto-hide success/error messages after 5 seconds
-    useEffect(() => {
-        if (successSignal.value || errorSignal.value) {
-            const timer = setTimeout(() => {
-                successSignal.value = null;
-                errorSignal.value = null;
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [successSignal.value, errorSignal.value]);
-
     return (
         <div className="flex min-h-screen bg-white">
             <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
@@ -98,21 +88,7 @@ export default function EdStructure({
                         Education Structure Management
                     </h1>
 
-                {/* Success/Error Messages */}
-                {successSignal.value && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                        <p className="text-green-700">{successSignal.value}</p>
-                    </div>
-                )}
-
-                {errorSignal.value && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                        <h5 className="text-lg font-semibold text-red-800 mb-2">Error</h5>
-                        <p className="text-red-700">{errorSignal.value}</p>
-                    </div>
-                )}
-
-                {/* Tab Navigation */}
+                    {/* Tab Navigation */}
                 <div className="border-b border-gray-200 mb-6">
                     <nav className="flex space-x-8">
                         <button
@@ -167,6 +143,22 @@ export default function EdStructure({
                     </div>
                 </div>
             </main>
+
+            {/* Toast Notifications */}
+            {successSignal.value && (
+                <Toast
+                    message={successSignal.value}
+                    type="success"
+                    onClose={() => successSignal.value = null}
+                />
+            )}
+            {errorSignal.value && (
+                <Toast
+                    message={errorSignal.value}
+                    type="error"
+                    onClose={() => errorSignal.value = null}
+                />
+            )}
         </div>
     );
 }

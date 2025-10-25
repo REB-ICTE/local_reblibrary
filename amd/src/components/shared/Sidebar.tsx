@@ -14,13 +14,13 @@ interface SidebarProps {
 
 export default function Sidebar({ adminMenuItems, libraryMenuItems }: SidebarProps) {
     return (
-        <aside className="w-56 bg-gray-50 border-r border-gray-200 p-5">
+        <aside className="w-56 bg-gray-50 border-r border-gray-200 py-6 pr-4">
             {/* Library Menu Section */}
             <div className="mb-8">
                 <h6 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
                     Library Menu
                 </h6>
-                <ul className="space-y-2">
+                <ul className="space-y-2 m-0 p-0">
                     {libraryMenuItems.map((item, index) => (
                         <li key={index}>
                             <a
@@ -43,7 +43,7 @@ export default function Sidebar({ adminMenuItems, libraryMenuItems }: SidebarPro
                 <h6 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
                     Admin Menu
                 </h6>
-                <ul className="space-y-2">
+                <ul className="space-y-2 m-0 p-0">
                     {adminMenuItems.map((item, index) => (
                         <li key={index}>
                             <a
