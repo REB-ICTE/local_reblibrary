@@ -121,7 +121,7 @@ const HorizontalScrollContainer = ({ children }: HorizontalScrollContainerProps)
 
             <div
                 ref={scrollContainerRef}
-                className="overflow-x-auto pb-4"
+                className="overflow-x-auto pb-2"
                 onScroll={checkScrollButtons}
                 style={{ scrollbarWidth: 'thin' }}
             >
@@ -297,28 +297,30 @@ export default function LibraryHome({
                 <>
                     {/* Fixed Header: Search Bar and Filters */}
                     <div className="flex-shrink-0 p-8 pb-4 bg-gray-50">
-                        {/* Search Bar */}
-                        <div className="mb-6">
-                            <div className="library-search max-w-2xl">
-                                <i className="fa fa-search search-icon"></i>
-                                <input
-                                    type="text"
-                                    placeholder="Search books by title or author..."
-                                    value={searchQuery}
-                                    onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
-                                    className="search-input"
-                                />
+                        {/* Search and Filter Component */}
+                        <div className="max-w-4xl mx-auto">
+                            {/* Search Bar */}
+                            <div className="mb-3">
+                                <div className="library-search">
+                                    <i className="fa fa-search search-icon"></i>
+                                    <input
+                                        type="text"
+                                        placeholder="Search books by title or author..."
+                                        value={searchQuery}
+                                        onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+                                        className="search-input"
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Filter Bar */}
-                        <div className="flex flex-wrap gap-3">
+                            {/* Filter Bar */}
+                            <div className="flex flex-wrap gap-3 justify-center">
                             {/* Level Filter */}
                             <div className="inline-block">
                                 <select
                                     value={selectedLevelId || ''}
                                     onChange={(e) => handleLevelChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                    className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
                                 >
                                     <option value="">All Levels</option>
                                     {initialLevels.map(level => (
@@ -335,7 +337,7 @@ export default function LibraryHome({
                                     value={selectedSublevelId || ''}
                                     onChange={(e) => handleSublevelChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
                                     disabled={!selectedLevelId}
-                                    className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                 >
                                     <option value="">All Sublevels</option>
                                     {filteredSublevels.map(sublevel => (
@@ -351,7 +353,7 @@ export default function LibraryHome({
                                 <select
                                     value={selectedClassId || ''}
                                     onChange={(e) => setSelectedClassId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                    className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
                                 >
                                     <option value="">All Classes</option>
                                     {filteredClasses.map(cls => (
@@ -367,7 +369,7 @@ export default function LibraryHome({
                                 <select
                                     value={selectedCategoryId || ''}
                                     onChange={(e) => setSelectedCategoryId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                    className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
                                 >
                                     <option value="">All Categories</option>
                                     {initialCategories.map(category => (
@@ -388,12 +390,13 @@ export default function LibraryHome({
                                         setSelectedCategoryId(null);
                                         setSearchQuery('');
                                     }}
-                                    className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                                    className="px-4 py-2.5 bg-gray-100 border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
                                 >
                                     <i className="fa fa-times mr-1"></i>
                                     Clear All
                                 </button>
                             )}
+                            </div>
                         </div>
                     </div>
 
@@ -403,12 +406,12 @@ export default function LibraryHome({
                         {resourcesByClass.length > 0 ? (
                             resourcesByClass.map(({ class: cls, resources: classResources }) => (
                                 classResources.length > 0 && (
-                                    <section key={cls.id} className="library-section mb-4">
-                                        <div className="mb-3">
+                                    <section key={cls.id} className="library-section">
+                                        <div className="mb-2">
                                             <h2 className="section-title text-2xl font-bold text-gray-900">
                                                 {cls.class_name}
                                             </h2>
-                                            <p className="text-sm text-gray-600 mt-1">
+                                            <p className="text-sm text-gray-600 mt-0.5">
                                                 {cls.level_name} → {cls.sublevel_name}
                                             </p>
                                         </div>

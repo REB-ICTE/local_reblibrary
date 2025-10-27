@@ -2,6 +2,7 @@
 
 @theme {
   /* REB Brand Colors */
+  --color-reb-blue-25: #f5f9fd;
   --color-reb-blue-50: #e6f0f9;
   --color-reb-blue-100: #cce0f3;
   --color-reb-blue-200: #99c2e7;
@@ -41,36 +42,42 @@ body.local-reblibrary-plugin #page-header {
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
   color: #9ca3af;
+  font-size: 16px;
 }
 
 .search-input {
   width: 100%;
-  padding: 10px 12px 10px 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 12px 16px 12px 44px;
+  border: 2px solid #d1d5db;
+  border-radius: 9999px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
+  background: white;
 }
 
 .search-input:focus {
   border-color: #005198;
-  box-shadow: 0 0 0 3px rgba(0, 81, 152, 0.1);
+  box-shadow: 0 0 0 4px rgba(0, 81, 152, 0.1);
 }
 
 .library-section {
-  margin-bottom: 48px;
+  margin-bottom: 20px;
+  background: white;
+  padding: 16px 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .section-title {
   font-size: 24px;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 24px 0;
+  margin: 0 0 12px 0;
 }
 
 .books-grid {
@@ -83,11 +90,16 @@ body.local-reblibrary-plugin #page-header {
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
+  background: var(--color-reb-blue-25);
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .book-card:hover {
   transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .book-cover-container {
