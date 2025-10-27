@@ -48,9 +48,10 @@ $PAGE->requires->css('/local/reblibrary/styles.css');
 // Load JavaScript module for library home.
 $PAGE->requires->js_call_amd('local_reblibrary/library-home', 'init');
 
-// Fetch all resources from database with author information.
+// Fetch all resources from database with author information, class assignments, and categories.
 global $DB;
 
+// Get resources with author info.
 $sql = "SELECT r.id, r.title, r.isbn, r.description, r.file_url, r.cover_image_url,
                r.author_id, r.created_at,
                CONCAT(a.first_name, ' ', a.last_name) as author_name,
@@ -60,6 +61,30 @@ $sql = "SELECT r.id, r.title, r.isbn, r.description, r.file_url, r.cover_image_u
         ORDER BY r.created_at DESC";
 
 $resources = $DB->get_records_sql($sql);
+
+// Get class assignments for each resource.
+$classassignments = $DB->get_records('local_reblibrary_res_assigns', null, '', 'id, resource_id, class_id');
+$resourceclasses = [];
+foreach ($classassignments as $assignment) {
+    if (!isset($resourceclasses[$assignment->resource_id])) {
+        $resourceclasses[$assignment->resource_id] = [];
+    }
+    if ($assignment->class_id) {
+        $resourceclasses[$assignment->resource_id][] = $assignment->class_id;
+    }
+}
+
+// Get category assignments for each resource.
+$categoryassignments = $DB->get_records('local_reblibrary_res_categories', null, '', 'id, resource_id, category_id');
+$resourcecategories = [];
+foreach ($categoryassignments as $assignment) {
+    if (!isset($resourcecategories[$assignment->resource_id])) {
+        $resourcecategories[$assignment->resource_id] = [];
+    }
+    $resourcecategories[$assignment->resource_id][] = $assignment->category_id;
+}
+
+// Build resources data with assignments.
 $resourcesdata = [];
 foreach ($resources as $resource) {
     $resourcesdata[] = [
@@ -72,6 +97,50 @@ foreach ($resources as $resource) {
         'author_id' => $resource->author_id,
         'author_name' => $resource->author_name ?? 'Unknown',
         'created_at' => $resource->created_at,
+        'class_ids' => $resourceclasses[$resource->id] ?? [],
+        'category_ids' => $resourcecategories[$resource->id] ?? [],
+    ];
+}
+
+// Get education structure for filters.
+$levels = $DB->get_records('local_reblibrary_edu_levels', null, 'level_name ASC');
+$levelsdata = [];
+foreach ($levels as $level) {
+    $levelsdata[] = [
+        'id' => $level->id,
+        'level_name' => $level->level_name,
+    ];
+}
+
+$sublevels = $DB->get_records('local_reblibrary_edu_sublevels', null, 'sublevel_name ASC');
+$sublevelsdata = [];
+foreach ($sublevels as $sublevel) {
+    $sublevelsdata[] = [
+        'id' => $sublevel->id,
+        'sublevel_name' => $sublevel->sublevel_name,
+        'level_id' => $sublevel->level_id,
+    ];
+}
+
+// Get classes with hierarchy info.
+$sql = "SELECT c.id, c.class_name, c.class_code, c.sublevel_id,
+               s.sublevel_name, s.level_id, l.level_name
+        FROM {local_reblibrary_classes} c
+        JOIN {local_reblibrary_edu_sublevels} s ON c.sublevel_id = s.id
+        JOIN {local_reblibrary_edu_levels} l ON s.level_id = l.id
+        ORDER BY l.level_name, s.sublevel_name, c.class_name";
+
+$classes = $DB->get_records_sql($sql);
+$classesdata = [];
+foreach ($classes as $class) {
+    $classesdata[] = [
+        'id' => $class->id,
+        'class_name' => $class->class_name,
+        'class_code' => $class->class_code,
+        'sublevel_id' => $class->sublevel_id,
+        'sublevel_name' => $class->sublevel_name,
+        'level_id' => $class->level_id,
+        'level_name' => $class->level_name,
     ];
 }
 
@@ -90,6 +159,9 @@ foreach ($categories as $category) {
 // Prepare data for template.
 $templatecontext = [
     'resources_json' => json_encode($resourcesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'levels_json' => json_encode($levelsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'sublevels_json' => json_encode($sublevelsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'classes_json' => json_encode($classesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
     'categories_json' => json_encode($categoriesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
 ];
 

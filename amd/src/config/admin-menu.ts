@@ -44,11 +44,5 @@ export function getAdminMenuItems(activePage: string = ''): MenuItem[] {
             icon: "fa fa-tags",
             active: activePage === 'categories'
         },
-        {
-            name: "Assignments",
-            url: "/local/reblibrary/admin/assignments.php",
-            icon: "fa fa-link",
-            active: activePage === 'assignments'
-        },
     ];
 }

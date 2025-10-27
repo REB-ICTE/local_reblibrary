@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_reblibrary';
-$plugin->version = 2025102403;           // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version = 2025102500;           // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires = 2025041400;          // Requires Moodle 5.0 (Build: 20250414).
 $plugin->maturity = MATURITY_STABLE;     // Code maturity level.
-$plugin->release = '1.3.1';              // Human-readable version name.
+$plugin->release = '1.4.0';              // Human-readable version name (MinIO upload feature).

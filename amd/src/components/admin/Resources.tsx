@@ -5,10 +5,18 @@ import type { Resource } from "../../services/resources";
 import type { Author } from "../../services/authors";
 import { ResourceService, CreateResourceData, UpdateResourceData } from "../../services/resources";
 import { AuthorService, CreateAuthorData, UpdateAuthorData } from "../../services/authors";
+import { CategoryService } from "../../services/categories";
+import type { Category } from "../../services/categories";
+import { getClasses, getResourceAssignments, assignToClasses } from "../../services/assignments";
+import type { Class } from "../../services/assignments";
+import { getResourceCategories, assignCategories } from "../../services/resource-categories";
 import Sidebar from "../shared/Sidebar";
 import Toast from "../shared/Toast";
 import { getAdminMenuItems } from "../../config/admin-menu";
 import { getLibraryMenuItems } from "../../config/library-menu";
+import { uploadResourceFiles, type UploadProgress } from "../../services/upload";
+import PdfPreview from "./PdfPreview";
+import UploadProgressComponent from "./UploadProgress";
 
 // Signals for state management
 export const resourcesSignal = signal<Resource[]>([]);
@@ -30,6 +38,23 @@ export default function Resources({ initialResources, initialAuthors }: Resource
         resourcesSignal.value = initialResources;
         authorsSignal.value = initialAuthors;
     }, [initialResources, initialAuthors]);
+
+    // Load assignment data (classes, categories)
+    useEffect(() => {
+        const loadAssignmentData = async () => {
+            try {
+                const [classesData, categoriesData] = await Promise.all([
+                    getClasses(),
+                    CategoryService.getAll(),
+                ]);
+                setClasses(classesData);
+                setCategories(categoriesData);
+            } catch (error) {
+                console.error('Failed to load assignment data:', error);
+            }
+        };
+        loadAssignmentData();
+    }, []);
 
     // Menu items
     const libraryMenuItems = getLibraryMenuItems();
@@ -56,6 +81,17 @@ export default function Resources({ initialResources, initialAuthors }: Resource
         bio: '',
     });
 
+    // File upload state
+    const [selectedPdf, setSelectedPdf] = useState<File | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    // Assignment data
+    const [classes, setClasses] = useState<Class[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedClassIds, setSelectedClassIds] = useState<number[]>([]);
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+
     // Resource handlers
     const handleAddResource = () => {
         setEditingResource(null);
@@ -67,10 +103,12 @@ export default function Resources({ initialResources, initialAuthors }: Resource
             cover_image_url: '',
             file_url: '',
         });
+        setSelectedClassIds([]);
+        setSelectedCategoryIds([]);
         setShowResourceForm(true);
     };
 
-    const handleEditResource = (resource: Resource) => {
+    const handleEditResource = async (resource: Resource) => {
         setEditingResource(resource);
         setResourceFormData({
             title: resource.title,
@@ -80,12 +118,52 @@ export default function Resources({ initialResources, initialAuthors }: Resource
             cover_image_url: resource.cover_image_url || '',
             file_url: resource.file_url || '',
         });
+
+        // Load existing assignments
+        try {
+            const [assignments, categoryAssignments] = await Promise.all([
+                getResourceAssignments(resource.id),
+                getResourceCategories(resource.id),
+            ]);
+            setSelectedClassIds(assignments.class_ids);
+            setSelectedCategoryIds(categoryAssignments.category_ids);
+        } catch (error) {
+            console.error('Failed to load resource assignments:', error);
+            // Reset to empty arrays on error
+            setSelectedClassIds([]);
+            setSelectedCategoryIds([]);
+        }
+
         setShowResourceForm(true);
     };
 
     const handleCancelResource = () => {
         setShowResourceForm(false);
         setEditingResource(null);
+        setSelectedPdf(null);
+        setUploadProgress(null);
+    };
+
+    const handleFileSelect = (e: Event) => {
+        const input = e.target as HTMLInputElement;
+        const file = input.files?.[0];
+
+        if (!file) return;
+
+        // Validate file type
+        if (file.type !== 'application/pdf') {
+            errorSignal.value = 'Please select a PDF file';
+            return;
+        }
+
+        // Validate file size (max 100MB)
+        if (file.size > 100 * 1024 * 1024) {
+            errorSignal.value = 'File size must be less than 100MB';
+            return;
+        }
+
+        setSelectedPdf(file);
+        errorSignal.value = null;
     };
 
     const handleSubmitResource = async (e: Event) => {
@@ -101,34 +179,70 @@ export default function Resources({ initialResources, initialAuthors }: Resource
             return;
         }
 
+        setIsUploading(true);
         loadingSignal.value = true;
         errorSignal.value = null;
         successSignal.value = null;
 
         try {
+            // Upload files if PDF selected
+            let fileUrl = resourceFormData.file_url;
+            let coverUrl = resourceFormData.cover_image_url;
+
+            if (selectedPdf) {
+                const { pdfUrl, coverUrl: newCoverUrl } = await uploadResourceFiles(
+                    selectedPdf,
+                    setUploadProgress
+                );
+                fileUrl = pdfUrl;
+                coverUrl = newCoverUrl;
+            }
+
+            // Update form data with file URLs
+            const formDataWithUrls = {
+                ...resourceFormData,
+                file_url: fileUrl,
+                cover_image_url: coverUrl,
+            };
+
+            // Submit to existing API
+            let resourceId: number;
             if (editingResource) {
                 const updateData: UpdateResourceData = {
-                    title: resourceFormData.title,
-                    isbn: resourceFormData.isbn,
-                    author_id: resourceFormData.author_id,
-                    description: resourceFormData.description,
-                    cover_image_url: resourceFormData.cover_image_url,
-                    file_url: resourceFormData.file_url,
+                    title: formDataWithUrls.title,
+                    isbn: formDataWithUrls.isbn,
+                    author_id: formDataWithUrls.author_id,
+                    description: formDataWithUrls.description,
+                    cover_image_url: formDataWithUrls.cover_image_url,
+                    file_url: formDataWithUrls.file_url,
                 };
                 const updated = await ResourceService.update(editingResource.id, updateData);
                 resourcesSignal.value = resourcesSignal.value.map(r =>
                     r.id === updated.id ? updated : r
                 );
-                successSignal.value = 'Resource updated successfully';
+                resourceId = updated.id;
             } else {
-                const created = await ResourceService.create(resourceFormData);
+                const created = await ResourceService.create(formDataWithUrls);
                 resourcesSignal.value = [created, ...resourcesSignal.value];
-                successSignal.value = 'Resource created successfully';
+                resourceId = created.id;
             }
+
+            // Save assignments
+            await Promise.all([
+                assignToClasses(resourceId, selectedClassIds),
+                assignCategories(resourceId, selectedCategoryIds),
+            ]);
+
+            successSignal.value = editingResource ? 'Resource updated successfully' : 'Resource created successfully';
+
+            // Reset state
+            setSelectedPdf(null);
+            setUploadProgress(null);
             handleCancelResource();
         } catch (error: any) {
             errorSignal.value = error.message || 'An error occurred';
         } finally {
+            setIsUploading(false);
             loadingSignal.value = false;
         }
     };
@@ -347,31 +461,113 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                     </select>
                                                 </div>
 
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Cover Image URL
-                                                    </label>
-                                                    <input
-                                                        type="url"
-                                                        value={resourceFormData.cover_image_url}
-                                                        onInput={(e) => setResourceFormData({ ...resourceFormData, cover_image_url: (e.target as HTMLInputElement).value })}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                        placeholder="https://example.com/cover.jpg"
-                                                    />
-                                                </div>
-
                                                 <div className="md:col-span-2">
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        File URL
+                                                        PDF File <span className="text-red-500">*</span>
                                                     </label>
-                                                    <input
-                                                        type="url"
-                                                        value={resourceFormData.file_url}
-                                                        onInput={(e) => setResourceFormData({ ...resourceFormData, file_url: (e.target as HTMLInputElement).value })}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
-                                                        placeholder="https://example.com/resource.pdf"
-                                                    />
+
+                                                    {!selectedPdf && !editingResource?.file_url ? (
+                                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                                                            <input
+                                                                type="file"
+                                                                accept="application/pdf"
+                                                                onChange={handleFileSelect}
+                                                                className="hidden"
+                                                                id="pdf-upload"
+                                                            />
+                                                            <label htmlFor="pdf-upload" className="cursor-pointer">
+                                                                <i className="fa fa-cloud-upload text-4xl text-gray-400 mb-2"></i>
+                                                                <p className="text-gray-700 font-medium">Click to upload PDF</p>
+                                                                <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+                                                                <p className="text-xs text-gray-400 mt-2">PDF files up to 100MB</p>
+                                                            </label>
+                                                        </div>
+                                                    ) : selectedPdf ? (
+                                                        <div>
+                                                            <PdfPreview file={selectedPdf} />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setSelectedPdf(null)}
+                                                                className="mt-2 text-sm text-red-600 hover:text-red-800"
+                                                            >
+                                                                <i className="fa fa-times mr-1"></i>
+                                                                Remove file
+                                                            </button>
+                                                        </div>
+                                                    ) : editingResource?.file_url ? (
+                                                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                            <div className="mb-4">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="flex-shrink-0">
+                                                                        {editingResource.cover_image_url ? (
+                                                                            <img
+                                                                                src={editingResource.cover_image_url}
+                                                                                alt="Cover"
+                                                                                className="w-32 h-auto border-2 border-gray-300 rounded shadow-sm"
+                                                                            />
+                                                                        ) : (
+                                                                            <i className="fa fa-file-pdf text-5xl text-red-500"></i>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h4 className="font-medium text-gray-900 mb-2">
+                                                                            <i className="fa fa-file-pdf text-red-500 mr-2"></i>
+                                                                            Current PDF File
+                                                                        </h4>
+                                                                        <p className="text-sm text-gray-600 mb-2 break-all">
+                                                                            <i className="fa fa-link text-xs mr-1"></i>
+                                                                            {editingResource.file_url}
+                                                                        </p>
+                                                                        <a
+                                                                            href={editingResource.file_url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                                                                        >
+                                                                            <i className="fa fa-external-link-alt mr-1"></i>
+                                                                            Open in new tab
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="border-t border-gray-200 pt-3">
+                                                                <p className="text-sm text-gray-700 mb-2">
+                                                                    <i className="fa fa-info-circle mr-1"></i>
+                                                                    Upload a new PDF to replace the current file
+                                                                </p>
+                                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="application/pdf"
+                                                                        onChange={handleFileSelect}
+                                                                        className="hidden"
+                                                                        id="pdf-upload-replace"
+                                                                    />
+                                                                    <label htmlFor="pdf-upload-replace" className="cursor-pointer">
+                                                                        <i className="fa fa-upload text-2xl text-gray-400 mb-1"></i>
+                                                                        <p className="text-sm text-gray-700 font-medium">Click to replace PDF</p>
+                                                                        <p className="text-xs text-gray-400 mt-1">PDF files up to 100MB</p>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
                                                 </div>
+
+                                                {uploadProgress && (
+                                                    <div className="md:col-span-2">
+                                                        <UploadProgressComponent {...uploadProgress} />
+                                                    </div>
+                                                )}
+
+                                                {selectedPdf && uploadProgress?.stage === 'complete' && (
+                                                    <div className="md:col-span-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                                                        <i className="fa fa-check-circle text-green-600 mr-2"></i>
+                                                        <span className="text-green-800 text-sm">
+                                                            Files uploaded successfully! Cover auto-generated from first page.
+                                                        </span>
+                                                    </div>
+                                                )}
 
                                                 <div className="md:col-span-2">
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -384,6 +580,65 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                         placeholder="Resource description"
                                                         rows={3}
                                                     />
+                                                </div>
+
+                                                {/* Assignments Section */}
+                                                <div className="md:col-span-2 mt-4 pt-4 border-t border-gray-200">
+                                                    <h4 className="text-base font-medium text-gray-900 mb-3">
+                                                        <i className="fa fa-link mr-2 text-gray-600"></i>
+                                                        Resource Assignments
+                                                    </h4>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        {/* Classes */}
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Classes
+                                                            </label>
+                                                            <select
+                                                                multiple
+                                                                value={selectedClassIds.map(String)}
+                                                                onChange={(e) => {
+                                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions).map(opt => parseInt(opt.value));
+                                                                    setSelectedClassIds(selected);
+                                                                }}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue h-32"
+                                                            >
+                                                                {classes.map((cls) => (
+                                                                    <option key={cls.id} value={cls.id}>
+                                                                        {cls.class_name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Hold Ctrl (Cmd on Mac) to select multiple
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Categories */}
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Categories
+                                                            </label>
+                                                            <select
+                                                                multiple
+                                                                value={selectedCategoryIds.map(String)}
+                                                                onChange={(e) => {
+                                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions).map(opt => parseInt(opt.value));
+                                                                    setSelectedCategoryIds(selected);
+                                                                }}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue h-32"
+                                                            >
+                                                                {categories.map((category) => (
+                                                                    <option key={category.id} value={category.id}>
+                                                                        {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Hold Ctrl (Cmd on Mac) to select multiple
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
 

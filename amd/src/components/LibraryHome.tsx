@@ -1,25 +1,55 @@
 import { h } from "preact";
-import { useState, useEffect } from "preact/hooks";
+import { useState, useEffect, useMemo, useRef } from "preact/hooks";
 import type { Resource } from "../services/resources";
 import type { Category } from "../services/categories";
 import Sidebar from "./shared/Sidebar";
+import PDFReader from "./shared/PDFReader";
 import { getAdminMenuItems } from "../config/admin-menu";
 import { getLibraryMenuItems } from "../config/library-menu";
 
+interface EducationLevel {
+    id: number | string;
+    level_name: string;
+}
+
+interface EducationSublevel {
+    id: number | string;
+    sublevel_name: string;
+    level_id: number | string;
+}
+
+interface Class {
+    id: number | string;
+    class_name: string;
+    class_code: string;
+    sublevel_id: number | string;
+    sublevel_name: string;
+    level_id: number | string;
+    level_name: string;
+}
+
 interface LibraryHomeProps {
     initialResources: Resource[];
+    initialLevels: EducationLevel[];
+    initialSublevels: EducationSublevel[];
+    initialClasses: Class[];
     initialCategories: Category[];
 }
 
 interface BookCardProps {
     resource: Resource;
+    onViewBook?: (resource: Resource) => void;
 }
 
-const BookCard = ({ resource }: BookCardProps) => {
+const BookCard = ({ resource, onViewBook }: BookCardProps) => {
     const placeholderImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="140" height="200" viewBox="0 0 140 200"%3E%3Crect fill="%23e5e7eb" width="140" height="200"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%239ca3af"%3ENo Cover%3C/text%3E%3C/svg%3E';
 
     return (
-        <div className="book-card">
+        <div
+            className="book-card"
+            onClick={() => resource.file_url && onViewBook?.(resource)}
+            style={{ cursor: resource.file_url ? 'pointer' : 'default' }}
+        >
             <div className="book-cover-container">
                 <img
                     src={resource.cover_image_url || placeholderImage}
@@ -29,46 +59,264 @@ const BookCard = ({ resource }: BookCardProps) => {
                         (e.target as HTMLImageElement).src = placeholderImage;
                     }}
                 />
-                <div className="book-overlay">
-                    <button className="book-action-btn" title="View">
-                        <i className="fa fa-eye"></i>
-                    </button>
-                    <button className="book-action-btn" title="Add to shelf">
-                        <i className="fa fa-bookmark"></i>
-                    </button>
-                </div>
             </div>
-            <h3 className="book-title">{resource.title}</h3>
-            <p className="book-author">{resource.author_name}</p>
-            {resource.isbn && <p className="book-isbn">ISBN: {resource.isbn}</p>}
+            <h3 className="book-title truncate" title={resource.title}>{resource.title}</h3>
+            <p className="book-author truncate" title={resource.author_name}>{resource.author_name}</p>
+            {resource.isbn && <p className="book-isbn truncate" title={`ISBN: ${resource.isbn}`}>ISBN: {resource.isbn}</p>}
         </div>
     );
 };
 
-export default function LibraryHome({ initialResources, initialCategories }: LibraryHomeProps) {
+interface HorizontalScrollContainerProps {
+    children: preact.ComponentChildren;
+}
+
+const HorizontalScrollContainer = ({ children }: HorizontalScrollContainerProps) => {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [showLeftButton, setShowLeftButton] = useState(false);
+    const [showRightButton, setShowRightButton] = useState(false);
+
+    const checkScrollButtons = () => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const { scrollLeft, scrollWidth, clientWidth } = container;
+        setShowLeftButton(scrollLeft > 0);
+        setShowRightButton(scrollLeft < scrollWidth - clientWidth - 1);
+    };
+
+    useEffect(() => {
+        checkScrollButtons();
+        window.addEventListener('resize', checkScrollButtons);
+        return () => window.removeEventListener('resize', checkScrollButtons);
+    }, []);
+
+    const scroll = (direction: 'left' | 'right') => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const scrollAmount = container.clientWidth * 0.8;
+        const targetScroll = direction === 'left'
+            ? container.scrollLeft - scrollAmount
+            : container.scrollLeft + scrollAmount;
+
+        container.scrollTo({
+            left: targetScroll,
+            behavior: 'smooth'
+        });
+    };
+
+    return (
+        <div className="relative">
+            {showLeftButton && (
+                <button
+                    onClick={() => scroll('left')}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-100 transition-colors"
+                    style={{ marginLeft: '-20px' }}
+                    aria-label="Scroll left"
+                >
+                    <i className="fa fa-chevron-left text-gray-700"></i>
+                </button>
+            )}
+
+            <div
+                ref={scrollContainerRef}
+                className="overflow-x-auto pb-4"
+                onScroll={checkScrollButtons}
+                style={{ scrollbarWidth: 'thin' }}
+            >
+                {children}
+            </div>
+
+            {showRightButton && (
+                <button
+                    onClick={() => scroll('right')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-100 transition-colors"
+                    style={{ marginRight: '-20px' }}
+                    aria-label="Scroll right"
+                >
+                    <i className="fa fa-chevron-right text-gray-700"></i>
+                </button>
+            )}
+        </div>
+    );
+};
+
+export default function LibraryHome({
+    initialResources,
+    initialLevels,
+    initialSublevels,
+    initialClasses,
+    initialCategories
+}: LibraryHomeProps) {
     const [resources, setResources] = useState<Resource[]>(initialResources);
     const [searchQuery, setSearchQuery] = useState('');
+    const [viewingResource, setViewingResource] = useState<Resource | null>(null);
+
+    // Filter state
+    const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null);
+    const [selectedSublevelId, setSelectedSublevelId] = useState<number | null>(null);
+    const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
     // Menu items
     const libraryMenuItems = getLibraryMenuItems('home');
     const adminMenuItems = getAdminMenuItems('');
 
-    // Split resources into recently added and recommended
-    const recentlyAdded = resources.slice(0, 7);
-    const recommended = resources.slice(7, 21);
+    // Filter sublevels based on selected level
+    const filteredSublevels = useMemo(() => {
+        if (!selectedLevelId) return initialSublevels;
+        return initialSublevels.filter(sl => parseInt(sl.level_id as any) === selectedLevelId);
+    }, [selectedLevelId, initialSublevels]);
 
-    const filteredResources = searchQuery
-        ? resources.filter(r =>
-            r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            r.author_name.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        : resources;
+    // Filter classes based on selected sublevel
+    const filteredClasses = useMemo(() => {
+        if (!selectedSublevelId) {
+            // If only level is selected, show all classes for that level
+            if (selectedLevelId) {
+                return initialClasses.filter(c => parseInt(c.level_id as any) === selectedLevelId);
+            }
+            return initialClasses;
+        }
+        return initialClasses.filter(c => parseInt(c.sublevel_id as any) === selectedSublevelId);
+    }, [selectedLevelId, selectedSublevelId, initialClasses]);
+
+    // Handle level change - reset sublevel and class
+    const handleLevelChange = (levelId: number | null) => {
+        setSelectedLevelId(levelId);
+        setSelectedSublevelId(null);
+        setSelectedClassId(null);
+    };
+
+    // Handle sublevel change - reset class
+    const handleSublevelChange = (sublevelId: number | null) => {
+        setSelectedSublevelId(sublevelId);
+        setSelectedClassId(null);
+    };
+
+    // Filter resources based on all filters
+    const filteredResources = useMemo(() => {
+        let filtered = resources;
+
+        console.log('=== Filtering Debug ===');
+        console.log('Total resources:', resources.length);
+        console.log('Selected level ID:', selectedLevelId);
+        console.log('Selected sublevel ID:', selectedSublevelId);
+        console.log('Selected class ID:', selectedClassId);
+
+        // Search filter
+        if (searchQuery) {
+            filtered = filtered.filter(r =>
+                r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                r.author_name?.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            console.log('After search filter:', filtered.length);
+        }
+
+        // Class filter
+        if (selectedClassId) {
+            console.log('Filtering by class ID:', selectedClassId);
+            filtered = filtered.filter(r =>
+                r.class_ids && r.class_ids.map(id => parseInt(id as any)).includes(selectedClassId)
+            );
+            console.log('After class filter:', filtered.length);
+        } else if (selectedSublevelId) {
+            // If sublevel is selected but not class, show all resources for classes in that sublevel
+            const sublevelClassIds = filteredClasses.map(c => parseInt(c.id as any));
+            console.log('Sublevel class IDs:', sublevelClassIds);
+            console.log('First 3 resources class_ids:', resources.slice(0, 3).map(r => ({ id: r.id, class_ids: r.class_ids, types: r.class_ids?.map(id => typeof id) })));
+            filtered = filtered.filter(r =>
+                r.class_ids && r.class_ids.map(id => parseInt(id as any)).some(id => sublevelClassIds.includes(id))
+            );
+            console.log('After sublevel filter:', filtered.length);
+        } else if (selectedLevelId) {
+            // If only level is selected, show all resources for classes in that level
+            const levelClasses = initialClasses.filter(c => parseInt(c.level_id as any) === selectedLevelId);
+            const levelClassIds = levelClasses.map(c => parseInt(c.id as any));
+            console.log('Filtering by level:', selectedLevelId);
+            console.log('Classes for this level:', levelClasses);
+            console.log('Level class IDs:', levelClassIds);
+            console.log('All classes level_ids:', initialClasses.map(c => ({ id: c.id, name: c.class_name, level_id: c.level_id })));
+            console.log('Sample resource class_ids:', resources.slice(0, 3).map(r => ({ id: r.id, class_ids: r.class_ids })));
+            filtered = filtered.filter(r =>
+                r.class_ids && r.class_ids.map(id => parseInt(id as any)).some(id => levelClassIds.includes(id))
+            );
+            console.log('After level filter:', filtered.length);
+        }
+
+        // Category filter
+        if (selectedCategoryId) {
+            console.log('Filtering by category ID:', selectedCategoryId);
+            filtered = filtered.filter(r =>
+                r.category_ids && r.category_ids.map(id => parseInt(id as any)).includes(selectedCategoryId)
+            );
+            console.log('After category filter:', filtered.length);
+        }
+
+        console.log('Final filtered count:', filtered.length);
+        console.log('=======================');
+
+        return filtered;
+    }, [resources, searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId, filteredClasses, initialClasses]);
+
+    // Group resources by class
+    const resourcesByClass = useMemo(() => {
+        const grouped = new Map<number, { class: Class; resources: Resource[] }>();
+
+        // Get all classes that should be displayed (respecting filters)
+        const classesToShow = selectedClassId
+            ? filteredClasses.filter(c => parseInt(c.id as any) === selectedClassId)
+            : filteredClasses;
+
+        // Initialize with classes
+        classesToShow.forEach(cls => {
+            const classIdNum = parseInt(cls.id as any);
+            grouped.set(classIdNum, { class: cls, resources: [] });
+        });
+
+        // Distribute resources to their classes
+        filteredResources.forEach(resource => {
+            if (resource.class_ids && resource.class_ids.length > 0) {
+                resource.class_ids.forEach(classId => {
+                    const classIdNum = parseInt(classId as any);
+                    if (grouped.has(classIdNum)) {
+                        grouped.get(classIdNum)!.resources.push(resource);
+                    }
+                });
+            }
+        });
+
+        // Sort by level, sublevel, class name
+        return Array.from(grouped.values()).sort((a, b) => {
+            // First by level name
+            if (a.class.level_name !== b.class.level_name) {
+                return a.class.level_name.localeCompare(b.class.level_name);
+            }
+            // Then by sublevel name
+            if (a.class.sublevel_name !== b.class.sublevel_name) {
+                return a.class.sublevel_name.localeCompare(b.class.sublevel_name);
+            }
+            // Finally by class name
+            return a.class.class_name.localeCompare(b.class.class_name);
+        });
+    }, [filteredResources, filteredClasses, selectedClassId]);
+
+    // Get unassigned resources (resources with no class assignments)
+    const unassignedResources = useMemo(() => {
+        return filteredResources.filter(r => !r.class_ids || r.class_ids.length === 0);
+    }, [filteredResources]);
 
     return (
         <div className="flex min-h-screen bg-white">
             <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
 
             <main className="flex-1 overflow-y-auto bg-gray-50">
+                {viewingResource ? (
+                    <PDFReader
+                        resource={viewingResource}
+                        onClose={() => setViewingResource(null)}
+                    />
+                ) : (
                 <div className="p-8">
                     {/* Search Bar */}
                     <div className="mb-6">
@@ -84,53 +332,149 @@ export default function LibraryHome({ initialResources, initialCategories }: Lib
                         </div>
                     </div>
 
-                    {/* Main Content Area */}
-                    {searchQuery ? (
-                        <section className="library-section">
-                            <h2 className="section-title">Search Results ({filteredResources.length})</h2>
-                            <div className="books-grid">
-                                {filteredResources.map(resource => (
-                                    <BookCard key={resource.id} resource={resource} />
+                    {/* Filter Bar */}
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        {/* Level Filter */}
+                        <div className="inline-block">
+                            <select
+                                value={selectedLevelId || ''}
+                                onChange={(e) => handleLevelChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                            >
+                                <option value="">All Levels</option>
+                                {initialLevels.map(level => (
+                                    <option key={level.id} value={String(level.id)}>
+                                        {level.level_name}
+                                    </option>
                                 ))}
-                            </div>
-                            {filteredResources.length === 0 && (
-                                <div className="empty-state">
-                                    <i className="fa fa-search text-6xl text-gray-300 mb-4"></i>
-                                    <p>No books found matching "{searchQuery}"</p>
+                            </select>
+                        </div>
+
+                        {/* Sublevel Filter */}
+                        <div className="inline-block">
+                            <select
+                                value={selectedSublevelId || ''}
+                                onChange={(e) => handleSublevelChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                disabled={!selectedLevelId}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <option value="">All Sublevels</option>
+                                {filteredSublevels.map(sublevel => (
+                                    <option key={sublevel.id} value={String(sublevel.id)}>
+                                        {sublevel.sublevel_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Class Filter */}
+                        <div className="inline-block">
+                            <select
+                                value={selectedClassId || ''}
+                                onChange={(e) => setSelectedClassId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                            >
+                                <option value="">All Classes</option>
+                                {filteredClasses.map(cls => (
+                                    <option key={cls.id} value={String(cls.id)}>
+                                        {cls.class_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Category Filter */}
+                        <div className="inline-block">
+                            <select
+                                value={selectedCategoryId || ''}
+                                onChange={(e) => setSelectedCategoryId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                            >
+                                <option value="">All Categories</option>
+                                {initialCategories.map(category => (
+                                    <option key={category.id} value={String(category.id)}>
+                                        {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Clear Filters Button */}
+                        {(selectedLevelId || selectedSublevelId || selectedClassId || selectedCategoryId || searchQuery) && (
+                            <button
+                                onClick={() => {
+                                    setSelectedLevelId(null);
+                                    setSelectedSublevelId(null);
+                                    setSelectedClassId(null);
+                                    setSelectedCategoryId(null);
+                                    setSearchQuery('');
+                                }}
+                                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                            >
+                                <i className="fa fa-times mr-1"></i>
+                                Clear All
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Main Content Area - Class-based Sections */}
+                    {resourcesByClass.length > 0 ? (
+                        resourcesByClass.map(({ class: cls, resources: classResources }) => (
+                            classResources.length > 0 && (
+                                <section key={cls.id} className="library-section mb-4">
+                                    <div className="mb-3">
+                                        <h2 className="section-title text-2xl font-bold text-gray-900">
+                                            {cls.class_name}
+                                        </h2>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {cls.level_name} → {cls.sublevel_name}
+                                        </p>
+                                    </div>
+                                    <HorizontalScrollContainer>
+                                        <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                                            {classResources.map(resource => (
+                                                <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                                    <BookCard resource={resource} onViewBook={setViewingResource} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </HorizontalScrollContainer>
+                                </section>
+                            )
+                        ))
+                    ) : unassignedResources.length > 0 ? (
+                        <section className="library-section">
+                            <h2 className="section-title">Unassigned Resources</h2>
+                            <HorizontalScrollContainer>
+                                <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                                    {unassignedResources.map(resource => (
+                                        <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                            <BookCard resource={resource} onViewBook={setViewingResource} />
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
+                            </HorizontalScrollContainer>
                         </section>
                     ) : (
-                        <>
-                            {/* Recently Added Section */}
-                            <section className="library-section">
-                                <h2 className="section-title">Recently Added</h2>
-                                <div className="books-grid">
-                                    {recentlyAdded.map(resource => (
-                                        <BookCard key={resource.id} resource={resource} />
-                                    ))}
-                                </div>
-                            </section>
-
-                            {/* Recommended Section */}
-                            <section className="library-section">
-                                <h2 className="section-title">Recommended For You</h2>
-                                <div className="books-grid">
-                                    {recommended.map(resource => (
-                                        <BookCard key={resource.id} resource={resource} />
-                                    ))}
-                                </div>
-                            </section>
-                        </>
-                    )}
-
-                    {resources.length === 0 && (
                         <div className="empty-state">
                             <i className="fa fa-book text-6xl text-gray-300 mb-4"></i>
-                            <p>No books available yet. Check back later!</p>
+                            <p>No books found matching your filters.</p>
+                            <button
+                                onClick={() => {
+                                    setSelectedLevelId(null);
+                                    setSelectedSublevelId(null);
+                                    setSelectedClassId(null);
+                                    setSelectedCategoryId(null);
+                                    setSearchQuery('');
+                                }}
+                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                                Clear Filters
+                            </button>
                         </div>
                     )}
                 </div>
+                )}
             </main>
         </div>
     );

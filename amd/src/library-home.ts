@@ -30,7 +30,7 @@ import './styles.css';
 /**
  * Initialize the Library Home Preact application.
  *
- * Reads resources and categories data from HTML data attributes,
+ * Reads resources, categories, and education structure data from HTML data attributes,
  * and renders the LibraryHome component.
  *
  * @param {string} selector - CSS selector for the mount point
@@ -46,21 +46,33 @@ export const init = (selector: string = '#library-home-root') => {
     // Read data from HTML data attributes
     try {
         const resourcesDataAttr = container.getAttribute('data-resources');
+        const levelsDataAttr = container.getAttribute('data-levels');
+        const sublevelsDataAttr = container.getAttribute('data-sublevels');
+        const classesDataAttr = container.getAttribute('data-classes');
         const categoriesDataAttr = container.getAttribute('data-categories');
 
         // Parse data
         const initialResources: Resource[] = resourcesDataAttr ? JSON.parse(resourcesDataAttr) : [];
+        const initialLevels = levelsDataAttr ? JSON.parse(levelsDataAttr) : [];
+        const initialSublevels = sublevelsDataAttr ? JSON.parse(sublevelsDataAttr) : [];
+        const initialClasses = classesDataAttr ? JSON.parse(classesDataAttr) : [];
         const initialCategories: Category[] = categoriesDataAttr ? JSON.parse(categoriesDataAttr) : [];
 
         console.log('Library home data loaded:', {
-            resources: initialResources.length,
-            categories: initialCategories.length
+            resources: initialResources,
+            levels: initialLevels,
+            sublevels: initialSublevels,
+            classes: initialClasses,
+            categories: initialCategories
         });
 
         // Render the Preact app
         render(
             h(LibraryHome, {
                 initialResources,
+                initialLevels,
+                initialSublevels,
+                initialClasses,
                 initialCategories
             }),
             container

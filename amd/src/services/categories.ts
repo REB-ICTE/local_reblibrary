@@ -12,6 +12,7 @@ export interface Category {
     id: number;
     category_name: string;
     parent_category_id: number | null;
+    parent_name?: string;
     description: string;
 }
 
@@ -31,6 +32,18 @@ export interface UpdateCategoryData {
  * Category service for CRUD operations.
  */
 export class CategoryService {
+    /**
+     * Get all categories with parent information.
+     */
+    static async getAll(): Promise<Category[]> {
+        const response = await Ajax.call([{
+            methodname: 'local_reblibrary_get_all_categories_with_parent',
+            args: {},
+        }])[0];
+
+        return response as Category[];
+    }
+
     /**
      * Create a new category.
      */

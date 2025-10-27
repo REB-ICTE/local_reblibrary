@@ -325,4 +325,97 @@ $functions = [
         'capabilities' => 'local/reblibrary:manageresources',
     ],
 
+    // MinIO upload web services.
+    'local_reblibrary_generate_upload_urls' => [
+        'classname' => 'local_reblibrary\external\generate_upload_urls',
+        'methodname' => 'execute',
+        'classpath' => '',
+        'description' => 'Generate presigned upload URLs for MinIO S3 storage',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
+    // Resource assignment web services.
+    'local_reblibrary_get_classes_for_assignment' => [
+        'classname' => 'local_reblibrary\external\assignments',
+        'methodname' => 'get_classes',
+        'classpath' => '',
+        'description' => 'Get all classes with sublevel info for assignment',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_get_sections_for_assignment' => [
+        'classname' => 'local_reblibrary\external\assignments',
+        'methodname' => 'get_sections',
+        'classpath' => '',
+        'description' => 'Get all sections with sublevel info for assignment',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_get_resource_assignments' => [
+        'classname' => 'local_reblibrary\external\assignments',
+        'methodname' => 'get_resource_assignments',
+        'classpath' => '',
+        'description' => 'Get current assignments for a resource',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_assign_to_classes' => [
+        'classname' => 'local_reblibrary\external\assignments',
+        'methodname' => 'assign_to_classes',
+        'classpath' => '',
+        'description' => 'Assign resource to classes',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
+    'local_reblibrary_assign_to_sections' => [
+        'classname' => 'local_reblibrary\external\assignments',
+        'methodname' => 'assign_to_sections',
+        'classpath' => '',
+        'description' => 'Assign resource to sections',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
+    // Resource category assignment web services.
+    'local_reblibrary_get_all_categories_with_parent' => [
+        'classname' => 'local_reblibrary\external\resource_categories',
+        'methodname' => 'get_all_categories',
+        'classpath' => '',
+        'description' => 'Get all categories with parent information',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_get_resource_categories' => [
+        'classname' => 'local_reblibrary\external\resource_categories',
+        'methodname' => 'get_resource_categories',
+        'classpath' => '',
+        'description' => 'Get categories assigned to a resource',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_assign_categories' => [
+        'classname' => 'local_reblibrary\external\resource_categories',
+        'methodname' => 'assign_categories',
+        'classpath' => '',
+        'description' => 'Assign categories to a resource',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
 ];

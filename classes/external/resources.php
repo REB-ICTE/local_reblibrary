@@ -214,7 +214,8 @@ class resources extends external_api {
 
         $record = new \stdClass();
         $record->title = $params['title'];
-        $record->isbn = $params['isbn'] ?? null;
+        // Convert empty ISBN to NULL to avoid duplicate entry errors on unique constraint.
+        $record->isbn = (!empty($params['isbn'])) ? $params['isbn'] : null;
         $record->author_id = $params['author_id'];
         $record->description = $params['description'] ?? null;
         $record->cover_image_url = $params['cover_image_url'] ?? null;
@@ -311,7 +312,8 @@ class resources extends external_api {
             $resource->title = $params['title'];
         }
         if (isset($params['isbn'])) {
-            $resource->isbn = $params['isbn'];
+            // Convert empty ISBN to NULL to avoid duplicate entry errors on unique constraint.
+            $resource->isbn = (!empty($params['isbn'])) ? $params['isbn'] : null;
         }
         if (isset($params['author_id'])) {
             $resource->author_id = $params['author_id'];

@@ -11,14 +11,17 @@
 declare const require: any;
 
 export interface Resource {
-    id: number;
+    id: number | string;
     title: string;
     isbn?: string;
     author_id: number;
+    author_name?: string;
     description?: string;
     cover_image_url?: string;
     file_url?: string;
     created_at: number;
+    class_ids?: (number | string)[];
+    category_ids?: (number | string)[];
 }
 
 export interface CreateResourceData {
