@@ -198,63 +198,40 @@ export default function LibraryHome({
     const filteredResources = useMemo(() => {
         let filtered = resources;
 
-        console.log('=== Filtering Debug ===');
-        console.log('Total resources:', resources.length);
-        console.log('Selected level ID:', selectedLevelId);
-        console.log('Selected sublevel ID:', selectedSublevelId);
-        console.log('Selected class ID:', selectedClassId);
-
         // Search filter
         if (searchQuery) {
             filtered = filtered.filter(r =>
                 r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 r.author_name?.toLowerCase().includes(searchQuery.toLowerCase())
             );
-            console.log('After search filter:', filtered.length);
         }
 
         // Class filter
         if (selectedClassId) {
-            console.log('Filtering by class ID:', selectedClassId);
             filtered = filtered.filter(r =>
                 r.class_ids && r.class_ids.map(id => parseInt(id as any)).includes(selectedClassId)
             );
-            console.log('After class filter:', filtered.length);
         } else if (selectedSublevelId) {
             // If sublevel is selected but not class, show all resources for classes in that sublevel
             const sublevelClassIds = filteredClasses.map(c => parseInt(c.id as any));
-            console.log('Sublevel class IDs:', sublevelClassIds);
-            console.log('First 3 resources class_ids:', resources.slice(0, 3).map(r => ({ id: r.id, class_ids: r.class_ids, types: r.class_ids?.map(id => typeof id) })));
             filtered = filtered.filter(r =>
                 r.class_ids && r.class_ids.map(id => parseInt(id as any)).some(id => sublevelClassIds.includes(id))
             );
-            console.log('After sublevel filter:', filtered.length);
         } else if (selectedLevelId) {
             // If only level is selected, show all resources for classes in that level
             const levelClasses = initialClasses.filter(c => parseInt(c.level_id as any) === selectedLevelId);
             const levelClassIds = levelClasses.map(c => parseInt(c.id as any));
-            console.log('Filtering by level:', selectedLevelId);
-            console.log('Classes for this level:', levelClasses);
-            console.log('Level class IDs:', levelClassIds);
-            console.log('All classes level_ids:', initialClasses.map(c => ({ id: c.id, name: c.class_name, level_id: c.level_id })));
-            console.log('Sample resource class_ids:', resources.slice(0, 3).map(r => ({ id: r.id, class_ids: r.class_ids })));
             filtered = filtered.filter(r =>
                 r.class_ids && r.class_ids.map(id => parseInt(id as any)).some(id => levelClassIds.includes(id))
             );
-            console.log('After level filter:', filtered.length);
         }
 
         // Category filter
         if (selectedCategoryId) {
-            console.log('Filtering by category ID:', selectedCategoryId);
             filtered = filtered.filter(r =>
                 r.category_ids && r.category_ids.map(id => parseInt(id as any)).includes(selectedCategoryId)
             );
-            console.log('After category filter:', filtered.length);
         }
-
-        console.log('Final filtered count:', filtered.length);
-        console.log('=======================');
 
         return filtered;
     }, [resources, searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId, filteredClasses, initialClasses]);

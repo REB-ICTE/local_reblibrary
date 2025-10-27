@@ -85,13 +85,11 @@ export default function PDFReader({ resource, onClose }: PDFReaderProps) {
 
             const pageElement = pageRefs.current.get(pageNum);
             if (!pageElement) {
-                console.warn(`Page element not found for page ${pageNum}`);
                 return;
             }
 
             const canvas = pageElement.querySelector('canvas') as HTMLCanvasElement;
             if (!canvas) {
-                console.warn(`Canvas not found for page ${pageNum}`);
                 return;
             }
 
@@ -133,7 +131,6 @@ export default function PDFReader({ resource, onClose }: PDFReaderProps) {
         // Use requestAnimationFrame to ensure DOM is ready
         requestAnimationFrame(() => {
             const pagesToRender = Math.min(pagesToLoad, numPages);
-            console.log(`Rendering pages 1 to ${pagesToRender}`);
 
             for (let i = 1; i <= pagesToRender; i++) {
                 renderPage(i, zoom);
@@ -161,7 +158,6 @@ export default function PDFReader({ resource, onClose }: PDFReaderProps) {
         // Re-render visible pages
         requestAnimationFrame(() => {
             const pagesToRender = Math.min(pagesToLoad, numPages);
-            console.log(`Re-rendering pages 1 to ${pagesToRender} at zoom ${zoom}%`);
 
             for (let i = 1; i <= pagesToRender; i++) {
                 renderPage(i, zoom);
@@ -184,7 +180,6 @@ export default function PDFReader({ resource, onClose }: PDFReaderProps) {
                 // Load more pages if available
                 if (pagesToLoad < numPages) {
                     const newPagesToLoad = Math.min(pagesToLoad + PAGES_PER_BATCH, numPages);
-                    console.log(`Loading more pages: ${pagesToLoad + 1} to ${newPagesToLoad}`);
                     setPagesToLoad(newPagesToLoad);
                 }
             }
