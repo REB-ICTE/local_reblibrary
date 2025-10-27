@@ -284,173 +284,179 @@ export default function LibraryHome({
     }, [filteredResources]);
 
     return (
-        <div className="flex min-h-screen bg-white">
+        <div className="flex h-screen bg-white overflow-hidden">
             <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
 
-            <main className="flex-1 overflow-y-auto bg-gray-50">
+            <main className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
                 {viewingResource ? (
                     <PDFReader
                         resource={viewingResource}
                         onClose={() => setViewingResource(null)}
                     />
                 ) : (
-                <div className="p-8">
-                    {/* Search Bar */}
-                    <div className="mb-6">
-                        <div className="library-search max-w-2xl">
-                            <i className="fa fa-search search-icon"></i>
-                            <input
-                                type="text"
-                                placeholder="Search books by title or author..."
-                                value={searchQuery}
-                                onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
-                                className="search-input"
-                            />
+                <>
+                    {/* Fixed Header: Search Bar and Filters */}
+                    <div className="flex-shrink-0 p-8 pb-4 bg-gray-50">
+                        {/* Search Bar */}
+                        <div className="mb-6">
+                            <div className="library-search max-w-2xl">
+                                <i className="fa fa-search search-icon"></i>
+                                <input
+                                    type="text"
+                                    placeholder="Search books by title or author..."
+                                    value={searchQuery}
+                                    onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+                                    className="search-input"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Filter Bar */}
+                        <div className="flex flex-wrap gap-3">
+                            {/* Level Filter */}
+                            <div className="inline-block">
+                                <select
+                                    value={selectedLevelId || ''}
+                                    onChange={(e) => handleLevelChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                >
+                                    <option value="">All Levels</option>
+                                    {initialLevels.map(level => (
+                                        <option key={level.id} value={String(level.id)}>
+                                            {level.level_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Sublevel Filter */}
+                            <div className="inline-block">
+                                <select
+                                    value={selectedSublevelId || ''}
+                                    onChange={(e) => handleSublevelChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    disabled={!selectedLevelId}
+                                    className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <option value="">All Sublevels</option>
+                                    {filteredSublevels.map(sublevel => (
+                                        <option key={sublevel.id} value={String(sublevel.id)}>
+                                            {sublevel.sublevel_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Class Filter */}
+                            <div className="inline-block">
+                                <select
+                                    value={selectedClassId || ''}
+                                    onChange={(e) => setSelectedClassId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                >
+                                    <option value="">All Classes</option>
+                                    {filteredClasses.map(cls => (
+                                        <option key={cls.id} value={String(cls.id)}>
+                                            {cls.class_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Category Filter */}
+                            <div className="inline-block">
+                                <select
+                                    value={selectedCategoryId || ''}
+                                    onChange={(e) => setSelectedCategoryId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                >
+                                    <option value="">All Categories</option>
+                                    {initialCategories.map(category => (
+                                        <option key={category.id} value={String(category.id)}>
+                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Clear Filters Button */}
+                            {(selectedLevelId || selectedSublevelId || selectedClassId || selectedCategoryId || searchQuery) && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedLevelId(null);
+                                        setSelectedSublevelId(null);
+                                        setSelectedClassId(null);
+                                        setSelectedCategoryId(null);
+                                        setSearchQuery('');
+                                    }}
+                                    className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                                >
+                                    <i className="fa fa-times mr-1"></i>
+                                    Clear All
+                                </button>
+                            )}
                         </div>
                     </div>
 
-                    {/* Filter Bar */}
-                    <div className="mb-8 flex flex-wrap gap-3">
-                        {/* Level Filter */}
-                        <div className="inline-block">
-                            <select
-                                value={selectedLevelId || ''}
-                                onChange={(e) => handleLevelChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
-                            >
-                                <option value="">All Levels</option>
-                                {initialLevels.map(level => (
-                                    <option key={level.id} value={String(level.id)}>
-                                        {level.level_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Sublevel Filter */}
-                        <div className="inline-block">
-                            <select
-                                value={selectedSublevelId || ''}
-                                onChange={(e) => handleSublevelChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                disabled={!selectedLevelId}
-                                className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <option value="">All Sublevels</option>
-                                {filteredSublevels.map(sublevel => (
-                                    <option key={sublevel.id} value={String(sublevel.id)}>
-                                        {sublevel.sublevel_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Class Filter */}
-                        <div className="inline-block">
-                            <select
-                                value={selectedClassId || ''}
-                                onChange={(e) => setSelectedClassId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
-                            >
-                                <option value="">All Classes</option>
-                                {filteredClasses.map(cls => (
-                                    <option key={cls.id} value={String(cls.id)}>
-                                        {cls.class_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Category Filter */}
-                        <div className="inline-block">
-                            <select
-                                value={selectedCategoryId || ''}
-                                onChange={(e) => setSelectedCategoryId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
-                            >
-                                <option value="">All Categories</option>
-                                {initialCategories.map(category => (
-                                    <option key={category.id} value={String(category.id)}>
-                                        {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Clear Filters Button */}
-                        {(selectedLevelId || selectedSublevelId || selectedClassId || selectedCategoryId || searchQuery) && (
-                            <button
-                                onClick={() => {
-                                    setSelectedLevelId(null);
-                                    setSelectedSublevelId(null);
-                                    setSelectedClassId(null);
-                                    setSelectedCategoryId(null);
-                                    setSearchQuery('');
-                                }}
-                                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                            >
-                                <i className="fa fa-times mr-1"></i>
-                                Clear All
-                            </button>
+                    {/* Scrollable Content: Books List */}
+                    <div className="flex-1 overflow-y-auto px-8 pb-8">
+                        {/* Main Content Area - Class-based Sections */}
+                        {resourcesByClass.length > 0 ? (
+                            resourcesByClass.map(({ class: cls, resources: classResources }) => (
+                                classResources.length > 0 && (
+                                    <section key={cls.id} className="library-section mb-4">
+                                        <div className="mb-3">
+                                            <h2 className="section-title text-2xl font-bold text-gray-900">
+                                                {cls.class_name}
+                                            </h2>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {cls.level_name} → {cls.sublevel_name}
+                                            </p>
+                                        </div>
+                                        <HorizontalScrollContainer>
+                                            <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                                                {classResources.map(resource => (
+                                                    <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                                        <BookCard resource={resource} onViewBook={setViewingResource} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </HorizontalScrollContainer>
+                                    </section>
+                                )
+                            ))
+                        ) : unassignedResources.length > 0 ? (
+                            <section className="library-section">
+                                <h2 className="section-title">Unassigned Resources</h2>
+                                <HorizontalScrollContainer>
+                                    <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                                        {unassignedResources.map(resource => (
+                                            <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                                <BookCard resource={resource} onViewBook={setViewingResource} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </HorizontalScrollContainer>
+                            </section>
+                        ) : (
+                            <div className="empty-state">
+                                <i className="fa fa-book text-6xl text-gray-300 mb-4"></i>
+                                <p>No books found matching your filters.</p>
+                                <button
+                                    onClick={() => {
+                                        setSelectedLevelId(null);
+                                        setSelectedSublevelId(null);
+                                        setSelectedClassId(null);
+                                        setSelectedCategoryId(null);
+                                        setSearchQuery('');
+                                    }}
+                                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
                         )}
                     </div>
-
-                    {/* Main Content Area - Class-based Sections */}
-                    {resourcesByClass.length > 0 ? (
-                        resourcesByClass.map(({ class: cls, resources: classResources }) => (
-                            classResources.length > 0 && (
-                                <section key={cls.id} className="library-section mb-4">
-                                    <div className="mb-3">
-                                        <h2 className="section-title text-2xl font-bold text-gray-900">
-                                            {cls.class_name}
-                                        </h2>
-                                        <p className="text-sm text-gray-600 mt-1">
-                                            {cls.level_name} → {cls.sublevel_name}
-                                        </p>
-                                    </div>
-                                    <HorizontalScrollContainer>
-                                        <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
-                                            {classResources.map(resource => (
-                                                <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
-                                                    <BookCard resource={resource} onViewBook={setViewingResource} />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </HorizontalScrollContainer>
-                                </section>
-                            )
-                        ))
-                    ) : unassignedResources.length > 0 ? (
-                        <section className="library-section">
-                            <h2 className="section-title">Unassigned Resources</h2>
-                            <HorizontalScrollContainer>
-                                <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
-                                    {unassignedResources.map(resource => (
-                                        <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
-                                            <BookCard resource={resource} onViewBook={setViewingResource} />
-                                        </div>
-                                    ))}
-                                </div>
-                            </HorizontalScrollContainer>
-                        </section>
-                    ) : (
-                        <div className="empty-state">
-                            <i className="fa fa-book text-6xl text-gray-300 mb-4"></i>
-                            <p>No books found matching your filters.</p>
-                            <button
-                                onClick={() => {
-                                    setSelectedLevelId(null);
-                                    setSelectedSublevelId(null);
-                                    setSelectedClassId(null);
-                                    setSelectedCategoryId(null);
-                                    setSearchQuery('');
-                                }}
-                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            >
-                                Clear Filters
-                            </button>
-                        </div>
-                    )}
-                </div>
+                </>
                 )}
             </main>
         </div>
