@@ -33,12 +33,6 @@ export function getLibraryMenuItems(activePage: string = ''): MenuItem[] {
             active: activePage === 'browse'
         },
         {
-            name: "Search",
-            url: "/local/reblibrary/search.php",
-            icon: "fa fa-search",
-            active: activePage === 'search'
-        },
-        {
             name: "My Collection",
             url: "/local/reblibrary/collection.php",
             icon: "fa fa-bookmark",

@@ -594,23 +594,28 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                                 Classes
                                                             </label>
-                                                            <select
-                                                                multiple
-                                                                value={selectedClassIds.map(String)}
-                                                                onChange={(e) => {
-                                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions).map(opt => parseInt(opt.value));
-                                                                    setSelectedClassIds(selected);
-                                                                }}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue h-32"
-                                                            >
+                                                            <div className="border border-gray-300 rounded-lg p-3 max-h-32 overflow-y-auto bg-white">
                                                                 {classes.map((cls) => (
-                                                                    <option key={cls.id} value={cls.id}>
-                                                                        {cls.class_name}
-                                                                    </option>
+                                                                    <label key={cls.id} className="flex items-center py-1 hover:bg-gray-50 cursor-pointer">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={selectedClassIds.includes(cls.id)}
+                                                                            onChange={(e) => {
+                                                                                const checked = (e.target as HTMLInputElement).checked;
+                                                                                setSelectedClassIds(prev =>
+                                                                                    checked
+                                                                                        ? [...prev, cls.id]
+                                                                                        : prev.filter(id => id !== cls.id)
+                                                                                );
+                                                                            }}
+                                                                            className="mr-2"
+                                                                        />
+                                                                        <span className="text-sm text-gray-700">{cls.class_name}</span>
+                                                                    </label>
                                                                 ))}
-                                                            </select>
+                                                            </div>
                                                             <p className="text-xs text-gray-500 mt-1">
-                                                                Hold Ctrl (Cmd on Mac) to select multiple
+                                                                Select one or more classes
                                                             </p>
                                                         </div>
 
@@ -619,23 +624,30 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                                 Categories
                                                             </label>
-                                                            <select
-                                                                multiple
-                                                                value={selectedCategoryIds.map(String)}
-                                                                onChange={(e) => {
-                                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions).map(opt => parseInt(opt.value));
-                                                                    setSelectedCategoryIds(selected);
-                                                                }}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue h-32"
-                                                            >
+                                                            <div className="border border-gray-300 rounded-lg p-3 max-h-32 overflow-y-auto bg-white">
                                                                 {categories.map((category) => (
-                                                                    <option key={category.id} value={category.id}>
-                                                                        {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
-                                                                    </option>
+                                                                    <label key={category.id} className="flex items-center py-1 hover:bg-gray-50 cursor-pointer">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={selectedCategoryIds.includes(category.id)}
+                                                                            onChange={(e) => {
+                                                                                const checked = (e.target as HTMLInputElement).checked;
+                                                                                setSelectedCategoryIds(prev =>
+                                                                                    checked
+                                                                                        ? [...prev, category.id]
+                                                                                        : prev.filter(id => id !== category.id)
+                                                                                );
+                                                                            }}
+                                                                            className="mr-2"
+                                                                        />
+                                                                        <span className="text-sm text-gray-700">
+                                                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                                                        </span>
+                                                                    </label>
                                                                 ))}
-                                                            </select>
+                                                            </div>
                                                             <p className="text-xs text-gray-500 mt-1">
-                                                                Hold Ctrl (Cmd on Mac) to select multiple
+                                                                Select one or more categories
                                                             </p>
                                                         </div>
                                                     </div>

@@ -28,7 +28,7 @@ interface Class {
     level_name: string;
 }
 
-interface LibraryHomeProps {
+interface LibraryBrowseProps {
     initialResources: Resource[];
     initialLevels: EducationLevel[];
     initialSublevels: EducationSublevel[];
@@ -70,45 +70,6 @@ const BookCard = ({ resource, onViewBook }: BookCardProps) => {
 interface HorizontalScrollContainerProps {
     children: preact.ComponentChildren;
 }
-
-interface CategoryWithChildren extends Category {
-    children: CategoryWithChildren[];
-}
-
-/**
- * Build a hierarchical category tree from flat array
- */
-const buildCategoryHierarchy = (categories: Category[]): CategoryWithChildren[] => {
-    const categoryMap = new Map<number, CategoryWithChildren>();
-    const rootCategories: CategoryWithChildren[] = [];
-
-    // First pass: create all category nodes (ensure IDs are numbers)
-    categories.forEach(cat => {
-        const catId = typeof cat.id === 'number' ? cat.id : parseInt(cat.id as string);
-        const parentId = cat.parent_category_id ? (typeof cat.parent_category_id === 'number' ? cat.parent_category_id : parseInt(cat.parent_category_id as string)) : null;
-        categoryMap.set(catId, { ...cat, id: catId, parent_category_id: parentId, children: [] });
-    });
-
-    // Second pass: build hierarchy
-    categoryMap.forEach((categoryNode, catId) => {
-        if (categoryNode.parent_category_id && categoryMap.has(categoryNode.parent_category_id)) {
-            // Add to parent's children
-            categoryMap.get(categoryNode.parent_category_id)!.children.push(categoryNode);
-        } else {
-            // This is a root category
-            rootCategories.push(categoryNode);
-        }
-    });
-
-    // Sort categories alphabetically at each level
-    const sortCategories = (cats: CategoryWithChildren[]) => {
-        cats.sort((a, b) => a.category_name.localeCompare(b.category_name));
-        cats.forEach(cat => sortCategories(cat.children));
-    };
-    sortCategories(rootCategories);
-
-    return rootCategories;
-};
 
 const HorizontalScrollContainer = ({ children }: HorizontalScrollContainerProps) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -181,13 +142,13 @@ const HorizontalScrollContainer = ({ children }: HorizontalScrollContainerProps)
     );
 };
 
-export default function LibraryHome({
+export default function LibraryBrowse({
     initialResources,
     initialLevels,
     initialSublevels,
     initialClasses,
     initialCategories
-}: LibraryHomeProps) {
+}: LibraryBrowseProps) {
     const [resources, setResources] = useState<Resource[]>(initialResources);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewingResource, setViewingResource] = useState<Resource | null>(null);
@@ -199,7 +160,7 @@ export default function LibraryHome({
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
     // Menu items
-    const libraryMenuItems = getLibraryMenuItems('home');
+    const libraryMenuItems = getLibraryMenuItems('browse');
     const adminMenuItems = getAdminMenuItems('');
 
     // Filter sublevels based on selected level
@@ -275,101 +236,37 @@ export default function LibraryHome({
         return filtered;
     }, [resources, searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId, filteredClasses, initialClasses]);
 
-    // Group resources by class
-    const resourcesByClass = useMemo(() => {
-        const grouped = new Map<number, { class: Class; resources: Resource[] }>();
+    // Group resources by category
+    const resourcesByCategory = useMemo(() => {
+        const grouped = new Map<number, { category: Category; resources: Resource[] }>();
 
-        // Get all classes that should be displayed (respecting filters)
-        const classesToShow = selectedClassId
-            ? filteredClasses.filter(c => parseInt(c.id as any) === selectedClassId)
-            : filteredClasses;
-
-        // Initialize with classes
-        classesToShow.forEach(cls => {
-            const classIdNum = parseInt(cls.id as any);
-            grouped.set(classIdNum, { class: cls, resources: [] });
+        // Get all categories
+        initialCategories.forEach(cat => {
+            const categoryIdNum = parseInt(cat.id as any);
+            grouped.set(categoryIdNum, { category: cat, resources: [] });
         });
 
-        // Distribute resources to their classes
+        // Distribute resources to their categories
         filteredResources.forEach(resource => {
-            if (resource.class_ids && resource.class_ids.length > 0) {
-                resource.class_ids.forEach(classId => {
-                    const classIdNum = parseInt(classId as any);
-                    if (grouped.has(classIdNum)) {
-                        grouped.get(classIdNum)!.resources.push(resource);
+            if (resource.category_ids && resource.category_ids.length > 0) {
+                resource.category_ids.forEach(categoryId => {
+                    const categoryIdNum = parseInt(categoryId as any);
+                    if (grouped.has(categoryIdNum)) {
+                        grouped.get(categoryIdNum)!.resources.push(resource);
                     }
                 });
             }
         });
 
-        // Sort by level, sublevel, class name
-        return Array.from(grouped.values()).sort((a, b) => {
-            // First by level name
-            if (a.class.level_name !== b.class.level_name) {
-                return a.class.level_name.localeCompare(b.class.level_name);
-            }
-            // Then by sublevel name
-            if (a.class.sublevel_name !== b.class.sublevel_name) {
-                return a.class.sublevel_name.localeCompare(b.class.sublevel_name);
-            }
-            // Finally by class name
-            return a.class.class_name.localeCompare(b.class.class_name);
-        });
-    }, [filteredResources, filteredClasses, selectedClassId]);
+        // Filter out categories with no resources and sort alphabetically
+        return Array.from(grouped.values())
+            .filter(({ resources }) => resources.length > 0)
+            .sort((a, b) => a.category.category_name.localeCompare(b.category.category_name));
+    }, [filteredResources, initialCategories]);
 
-    // Build category hierarchy
-    const categoryHierarchy = useMemo(() => {
-        return buildCategoryHierarchy(initialCategories);
-    }, [initialCategories]);
-
-    // Group resources by class, then by category within each class
-    const resourcesByClassAndCategory = useMemo(() => {
-        return resourcesByClass.map(({ class: cls, resources: classResources }) => {
-            // Separate uncategorized resources
-            const uncategorizedResources = classResources.filter(r => !r.category_ids || r.category_ids.length === 0);
-
-            // Create a map to track which resources belong to which categories
-            const resourcesByCategoryId = new Map<number, Resource[]>();
-
-            // Distribute resources to their categories
-            classResources.forEach(resource => {
-                if (resource.category_ids && resource.category_ids.length > 0) {
-                    resource.category_ids.forEach(categoryId => {
-                        const catId = parseInt(categoryId as any);
-                        if (!resourcesByCategoryId.has(catId)) {
-                            resourcesByCategoryId.set(catId, []);
-                        }
-                        resourcesByCategoryId.get(catId)!.push(resource);
-                    });
-                }
-            });
-
-            // Build category rows in hierarchical order
-            const categorySections: Array<{ category: CategoryWithChildren; resources: Resource[]; depth: number }> = [];
-
-            const processCategory = (category: CategoryWithChildren, depth: number) => {
-                const categoryResources = resourcesByCategoryId.get(category.id) || [];
-                if (categoryResources.length > 0) {
-                    categorySections.push({ category, resources: categoryResources, depth });
-                }
-                // Process children recursively
-                category.children.forEach(child => processCategory(child, depth + 1));
-            };
-
-            // Process all root categories
-            categoryHierarchy.forEach(rootCat => processCategory(rootCat, 0));
-
-            return {
-                class: cls,
-                uncategorizedResources,
-                categorySections
-            };
-        });
-    }, [resourcesByClass, categoryHierarchy]);
-
-    // Get unassigned resources (resources with no class assignments)
-    const unassignedResources = useMemo(() => {
-        return filteredResources.filter(r => !r.class_ids || r.class_ids.length === 0);
+    // Get uncategorized resources (resources with no category assignments)
+    const uncategorizedResources = useMemo(() => {
+        return filteredResources.filter(r => !r.category_ids || r.category_ids.length === 0);
     }, [filteredResources]);
 
     return (
@@ -404,6 +301,22 @@ export default function LibraryHome({
 
                             {/* Filter Bar */}
                             <div className="flex flex-wrap gap-3 justify-center">
+                            {/* Category Filter */}
+                            <div className="inline-block">
+                                <select
+                                    value={selectedCategoryId || ''}
+                                    onChange={(e) => setSelectedCategoryId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
+                                >
+                                    <option value="">All Categories</option>
+                                    {initialCategories.map(category => (
+                                        <option key={category.id} value={String(category.id)}>
+                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             {/* Level Filter */}
                             <div className="inline-block">
                                 <select
@@ -453,22 +366,6 @@ export default function LibraryHome({
                                 </select>
                             </div>
 
-                            {/* Category Filter */}
-                            <div className="inline-block">
-                                <select
-                                    value={selectedCategoryId || ''}
-                                    onChange={(e) => setSelectedCategoryId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
-                                >
-                                    <option value="">All Categories</option>
-                                    {initialCategories.map(category => (
-                                        <option key={category.id} value={String(category.id)}>
-                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
                             {/* Clear Filters Button */}
                             {(selectedLevelId || selectedSublevelId || selectedClassId || selectedCategoryId || searchQuery) && (
                                 <button
@@ -492,66 +389,20 @@ export default function LibraryHome({
 
                     {/* Scrollable Content: Books List */}
                     <div className="flex-1 overflow-y-auto px-8 pb-8">
-                        {/* Main Content Area - Class-based Sections with Category Rows */}
-                        {resourcesByClassAndCategory.length > 0 ? (
-                            resourcesByClassAndCategory.map(({ class: cls, uncategorizedResources, categorySections }) => (
-                                (uncategorizedResources.length > 0 || categorySections.length > 0) && (
-                                    <section key={cls.id} className="library-section">
-                                        {/* Class Header */}
-                                        <div className="mb-4">
-                                            <h2 className="section-title text-2xl font-bold text-gray-900">
-                                                {cls.class_name}
-                                            </h2>
-                                            <p className="text-sm text-gray-600 mt-0.5">
-                                                {cls.level_name} → {cls.sublevel_name}
-                                            </p>
-                                        </div>
-
-                                        {/* Uncategorized Resources First */}
-                                        {uncategorizedResources.length > 0 && (
-                                            <div className="mb-6">
-                                                <h3 className="font-semibold text-gray-700 mb-2" style={{ fontSize: '14px' }}>
-                                                    Uncategorized
-                                                </h3>
-                                                <HorizontalScrollContainer>
-                                                    <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
-                                                        {uncategorizedResources.map(resource => (
-                                                            <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
-                                                                <BookCard resource={resource} onViewBook={setViewingResource} />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </HorizontalScrollContainer>
-                                            </div>
-                                        )}
-
-                                        {/* Category Sections in Hierarchical Order */}
-                                        {categorySections.map(({ category, resources: categoryResources, depth }) => (
-                                            <div key={category.id} className="mb-6" style={{ marginLeft: `${depth * 24}px` }}>
-                                                <h3 className="font-semibold text-gray-700 mb-2" style={{ fontSize: '14px' }}>
-                                                    {depth > 0 && <span className="text-gray-400 mr-2">{'└─'.repeat(1)}</span>}
-                                                    {category.category_name}
-                                                </h3>
-                                                <HorizontalScrollContainer>
-                                                    <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
-                                                        {categoryResources.map(resource => (
-                                                            <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
-                                                                <BookCard resource={resource} onViewBook={setViewingResource} />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </HorizontalScrollContainer>
-                                            </div>
-                                        ))}
-                                    </section>
-                                )
-                            ))
-                        ) : unassignedResources.length > 0 ? (
+                        {/* Show uncategorized resources first */}
+                        {uncategorizedResources.length > 0 && (
                             <section className="library-section">
-                                <h2 className="section-title">Unassigned Resources</h2>
+                                <div className="mb-2">
+                                    <h2 className="section-title text-2xl font-bold text-gray-900">
+                                        Uncategorized Books
+                                    </h2>
+                                    <p className="text-sm text-gray-600 mt-0.5">
+                                        Books without category assignments
+                                    </p>
+                                </div>
                                 <HorizontalScrollContainer>
                                     <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
-                                        {unassignedResources.map(resource => (
+                                        {uncategorizedResources.map(resource => (
                                             <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
                                                 <BookCard resource={resource} onViewBook={setViewingResource} />
                                             </div>
@@ -559,7 +410,34 @@ export default function LibraryHome({
                                     </div>
                                 </HorizontalScrollContainer>
                             </section>
-                        ) : (
+                        )}
+
+                        {/* Main Content Area - Category-based Sections */}
+                        {resourcesByCategory.length > 0 ? (
+                            resourcesByCategory.map(({ category, resources: categoryResources }) => (
+                                <section key={category.id} className="library-section">
+                                    <div className="mb-2">
+                                        <h2 className="section-title text-2xl font-bold text-gray-900">
+                                            {category.category_name}
+                                        </h2>
+                                        {category.description && (
+                                            <p className="text-sm text-gray-600 mt-0.5">
+                                                {category.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <HorizontalScrollContainer>
+                                        <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                                            {categoryResources.map(resource => (
+                                                <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                                    <BookCard resource={resource} onViewBook={setViewingResource} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </HorizontalScrollContainer>
+                                </section>
+                            ))
+                        ) : uncategorizedResources.length === 0 ? (
                             <div className="empty-state">
                                 <i className="fa fa-book text-6xl text-gray-300 mb-4"></i>
                                 <p>No books found matching your filters.</p>
@@ -577,7 +455,7 @@ export default function LibraryHome({
                                     Clear Filters
                                 </button>
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 </>
                 )}
