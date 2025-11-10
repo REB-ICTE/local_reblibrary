@@ -54,6 +54,7 @@ class resources extends external_api {
             'category_id' => new external_value(PARAM_INT, 'Filter by category ID', VALUE_DEFAULT, 0),
             'label_id' => new external_value(PARAM_INT, 'Filter by label ID', VALUE_DEFAULT, 0),
             'media_type' => new external_value(PARAM_TEXT, 'Filter by media type (text, audio, video)', VALUE_DEFAULT, ''),
+            'page_context' => new external_value(PARAM_TEXT, 'Page context (home, reading-materials)', VALUE_DEFAULT, 'home'),
         ]);
     }
 
@@ -67,9 +68,10 @@ class resources extends external_api {
      * @param int $categoryid Category ID filter
      * @param int $labelid Label ID filter
      * @param string $mediatype Media type filter
+     * @param string $pagecontext Page context (home, reading-materials)
      * @return array List of resources
      */
-    public static function get_all($searchquery = '', $levelid = 0, $sublevelid = 0, $classid = 0, $categoryid = 0, $labelid = 0, $mediatype = '') {
+    public static function get_all($searchquery = '', $levelid = 0, $sublevelid = 0, $classid = 0, $categoryid = 0, $labelid = 0, $mediatype = '', $pagecontext = 'home') {
         global $DB;
 
         // Validate parameters.
@@ -81,6 +83,7 @@ class resources extends external_api {
             'category_id' => $categoryid,
             'label_id' => $labelid,
             'media_type' => $mediatype,
+            'page_context' => $pagecontext,
         ]);
 
         // Validate context.
@@ -152,9 +155,10 @@ class resources extends external_api {
         // Apply visibility filter - only show public resources.
         $whereclauses[] = "r.visible = 1";
 
-        // Apply home page label filtering based on plugin settings.
-        $includelabels = get_config('local_reblibrary', 'homepage_include_labels');
-        $excludelabels = get_config('local_reblibrary', 'homepage_exclude_labels');
+        // Apply label filtering based on page context and plugin settings.
+        $labelprefix = ($params['page_context'] === 'reading-materials') ? 'readingmaterials' : 'homepage';
+        $includelabels = get_config('local_reblibrary', $labelprefix . '_include_labels');
+        $excludelabels = get_config('local_reblibrary', $labelprefix . '_exclude_labels');
 
         // Parse comma-separated config values to arrays.
         $includelabelids = $includelabels ? explode(',', $includelabels) : [];

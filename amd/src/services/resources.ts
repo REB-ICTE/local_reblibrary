@@ -56,6 +56,7 @@ export interface ResourceFilters {
     classId?: number;
     categoryId?: number;
     labelId?: number;
+    pageContext?: string;
 }
 
 /**
@@ -80,6 +81,7 @@ export const ResourceService = {
                         class_id: filters?.classId || 0,
                         category_id: filters?.categoryId || 0,
                         label_id: filters?.labelId || 0,
+                        page_context: filters?.pageContext || 'home',
                     }
                 }])[0]
                     .then((data: Resource[]) => resolve(data))

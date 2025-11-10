@@ -21,6 +21,13 @@ export function getLibraryMenuItems(activePage: string = ''): MenuItem[] {
             icon: "fa fa-book-open",
             active: activePage === 'home',
             children: [] // Will be populated with education structure in Sidebar component
+        },
+        {
+            name: "Reading Materials",
+            url: "/local/reblibrary/reading-materials.php",
+            icon: "fa fa-book-reader",
+            active: activePage === 'reading-materials',
+            children: []
         }
     ];
 }

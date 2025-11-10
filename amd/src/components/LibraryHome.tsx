@@ -230,6 +230,10 @@ export default function LibraryHome({
     const selectedClassId = urlParams.get('class_id') ? parseInt(urlParams.get('class_id')!) : null;
     const selectedCategoryId = urlParams.get('category_id') ? parseInt(urlParams.get('category_id')!) : null;
 
+    // Determine active page based on current URL path
+    const currentPath = window.location.pathname;
+    const activePage = currentPath.includes('/reading-materials.php') ? 'reading-materials' : 'home';
+
     // Debounced search effect
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -242,6 +246,7 @@ export default function LibraryHome({
                         sublevelId: selectedSublevelId || undefined,
                         classId: selectedClassId || undefined,
                         categoryId: selectedCategoryId || undefined,
+                        pageContext: activePage,
                     });
                     setResources(filteredResources);
 
@@ -264,7 +269,7 @@ export default function LibraryHome({
         }, 500); // 500ms debounce delay
 
         return () => clearTimeout(timer);
-    }, [searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId]);
+    }, [searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId, activePage]);
 
     // Restore focus after search completes
     useEffect(() => {
@@ -275,7 +280,7 @@ export default function LibraryHome({
     }, [isSearching]);
 
     // Menu items
-    const libraryMenuItems = getLibraryMenuItems('home');
+    const libraryMenuItems = getLibraryMenuItems(activePage);
 
     // Check if user is admin (from PHP)
     const rootElement = document.getElementById('library-home-root');

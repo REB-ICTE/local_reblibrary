@@ -78,6 +78,11 @@ $string['collectionpage_title'] = 'My Collection';
 $string['collectionpage_heading'] = 'My Collection';
 $string['collectionpage_description'] = 'View your saved resources and bookmarks.';
 
+// Reading Materials page strings.
+$string['readingmaterialspage_title'] = 'Reading Materials';
+$string['readingmaterialspage_heading'] = 'Reading Materials';
+$string['readingmaterialspage_description'] = 'Explore reading materials tailored for your learning journey.';
+
 // Admin page strings.
 $string['adminpage_title'] = 'Library Administration';
 $string['adminpage_heading'] = 'REB Library Administration';
@@ -89,6 +94,7 @@ $string['nav_home'] = 'Home';
 $string['nav_browse'] = 'Browse';
 $string['nav_search'] = 'Search';
 $string['nav_collection'] = 'My Collection';
+$string['nav_reading_materials'] = 'Reading Materials';
 $string['nav_admin'] = 'Library Admin';
 
 // Admin navigation strings.
@@ -229,3 +235,11 @@ $string['homepageincludelabels'] = 'Include Labels';
 $string['homepageincludelabels_desc'] = 'Show only resources with these labels on the home page. If empty, all resources are shown (subject to exclude filter).';
 $string['homepageexcludelabels'] = 'Exclude Labels';
 $string['homepageexcludelabels_desc'] = 'Hide resources with these labels from the home page. Exclude takes precedence over include.';
+
+// Reading Materials page filtering settings.
+$string['readingmaterialsfiltering'] = 'Reading Materials Page Filtering';
+$string['readingmaterialsfiltering_desc'] = 'Control which resources appear on the Reading Materials page based on labels';
+$string['readingmaterialsincludelabels'] = 'Include Labels';
+$string['readingmaterialsincludelabels_desc'] = 'Show only resources with these labels on the Reading Materials page. If empty, all resources are shown (subject to exclude filter).';
+$string['readingmaterialsexcludelabels'] = 'Exclude Labels';
+$string['readingmaterialsexcludelabels_desc'] = 'Hide resources with these labels from the Reading Materials page. Exclude takes precedence over include.';

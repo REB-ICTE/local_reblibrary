@@ -111,4 +111,27 @@ if ($hassiteconfig) {
         [],
         $labels
     ));
+
+    // Reading Materials Page Filtering Settings.
+    $settings->add(new admin_setting_heading(
+        'local_reblibrary/readingmaterialsfilteringheading',
+        get_string('readingmaterialsfiltering', 'local_reblibrary'),
+        get_string('readingmaterialsfiltering_desc', 'local_reblibrary')
+    ));
+
+    $settings->add(new admin_setting_configmultiselect(
+        'local_reblibrary/readingmaterials_include_labels',
+        get_string('readingmaterialsincludelabels', 'local_reblibrary'),
+        get_string('readingmaterialsincludelabels_desc', 'local_reblibrary'),
+        [],
+        $labels
+    ));
+
+    $settings->add(new admin_setting_configmultiselect(
+        'local_reblibrary/readingmaterials_exclude_labels',
+        get_string('readingmaterialsexcludelabels', 'local_reblibrary'),
+        get_string('readingmaterialsexcludelabels_desc', 'local_reblibrary'),
+        [],
+        $labels
+    ));
 }
