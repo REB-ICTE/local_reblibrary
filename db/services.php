@@ -418,4 +418,76 @@ $functions = [
         'capabilities' => 'local/reblibrary:manageresources',
     ],
 
+    // Labels web services.
+    'local_reblibrary_get_all_labels' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'get_all',
+        'classpath' => '',
+        'description' => 'Get all labels',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_get_label_by_id' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'get_by_id',
+        'classpath' => '',
+        'description' => 'Get label by ID',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_create_label' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'create',
+        'classpath' => '',
+        'description' => 'Create a new label',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_update_label' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'update',
+        'classpath' => '',
+        'description' => 'Update a label',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_delete_label' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'delete',
+        'classpath' => '',
+        'description' => 'Delete a label',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    // Resource label assignment web services.
+    'local_reblibrary_get_resource_labels' => [
+        'classname' => 'local_reblibrary\external\resource_labels',
+        'methodname' => 'get_resource_labels',
+        'classpath' => '',
+        'description' => 'Get labels assigned to a resource',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_assign_labels' => [
+        'classname' => 'local_reblibrary\external\resource_labels',
+        'methodname' => 'assign_labels',
+        'classpath' => '',
+        'description' => 'Assign labels to a resource',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
 ];

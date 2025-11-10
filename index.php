@@ -112,6 +112,9 @@ if (!empty($searchquery)) {
     $params['searchquery3'] = $searchpattern;
 }
 
+// Apply visibility filter - only show public resources.
+$whereclauses[] = "r.visible = 1";
+
 // Add WHERE clause if filters are applied.
 if (!empty($whereclauses)) {
     $sql .= " WHERE " . implode(' AND ', $whereclauses);

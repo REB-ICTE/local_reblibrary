@@ -62,7 +62,7 @@ global $DB;
 
 // Get all resources with author information.
 $sql = "SELECT r.id, r.title, r.isbn, r.description, r.file_url, r.cover_image_url,
-               r.author_id, r.created_at,
+               r.author_id, r.visible, r.media_type, r.created_at,
                CONCAT(a.first_name, ' ', a.last_name) as author_name,
                a.first_name, a.last_name, a.bio
         FROM {local_reblibrary_resources} r
@@ -81,6 +81,8 @@ foreach ($resources as $resource) {
         'cover_image_url' => $resource->cover_image_url ?? '',
         'author_id' => $resource->author_id,
         'author_name' => $resource->author_name ?? 'Unknown',
+        'visible' => $resource->visible,
+        'media_type' => $resource->media_type ?? 'text',
         'created_at' => $resource->created_at,
     ];
 }

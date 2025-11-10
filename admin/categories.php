@@ -57,7 +57,7 @@ $PAGE->requires->js_call_amd('local_reblibrary/categories', 'init');
 $PAGE->navbar->add(get_string('pluginname', 'local_reblibrary'));
 $PAGE->navbar->add(get_string('categories_page_title', 'local_reblibrary'));
 
-// Fetch categories data from database.
+// Fetch categories and labels data from database.
 global $DB;
 
 // Get all categories with their parent information.
@@ -69,6 +69,17 @@ foreach ($categories as $category) {
         'category_name' => $category->category_name,
         'parent_category_id' => $category->parent_category_id,
         'description' => $category->description ?? '',
+    ];
+}
+
+// Get all labels.
+$labels = $DB->get_records('local_reblibrary_labels', null, 'label_name ASC');
+$labelsdata = [];
+foreach ($labels as $label) {
+    $labelsdata[] = [
+        'id' => $label->id,
+        'label_name' => $label->label_name,
+        'description' => $label->description ?? '',
     ];
 }
 
@@ -109,6 +120,7 @@ foreach ($classes as $class) {
 // Prepare data for template (only JSON-encoded data for Preact).
 $templatecontext = [
     'categories_json' => json_encode($categoriesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'labels_json' => json_encode($labelsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
     'levels_json' => json_encode($levelsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
     'sublevels_json' => json_encode($sublevelsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
     'classes_json' => json_encode($classesdata, JSON_HEX_QUOT | JSON_HEX_APOS),

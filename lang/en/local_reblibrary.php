@@ -96,7 +96,7 @@ $string['admin_menu_heading'] = 'ADMINISTRATION';
 $string['admin_nav_dashboard'] = 'Dashboard';
 $string['admin_nav_education'] = 'Education Structure';
 $string['admin_nav_resources'] = 'Resources & Authors';
-$string['admin_nav_categories'] = 'Categories';
+$string['admin_nav_categories'] = 'Labels & Categories';
 $string['admin_nav_assignments'] = 'Assignments';
 
 // Education levels CRUD.
@@ -126,14 +126,28 @@ $string['error_duplicate_class_name'] = 'A class with this name already exists';
 $string['error_duplicate_class_code'] = 'A class with this code already exists';
 $string['error_duplicate_section_code'] = 'A section with this code already exists';
 
-// Categories page.
-$string['categories_page_title'] = 'Categories Management';
-$string['categories_page_heading'] = 'Resource Categories Management';
+// Categories & Labels page.
+$string['categories_page_title'] = 'Labels & Categories Management';
+$string['categories_page_heading'] = 'Labels & Categories Management';
+
+// Categories & Labels tabs.
+$string['tab_categories'] = 'Categories';
+$string['tab_labels'] = 'Labels';
 
 // Categories error messages.
 $string['invalidparentcategory'] = 'The parent category does not exist';
 $string['cannotbeparentofself'] = 'A category cannot be its own parent';
 $string['categoryhaschildren'] = 'Cannot delete category that has subcategories';
+
+// Labels tab.
+$string['add_label'] = 'Add Label';
+$string['edit_label'] = 'Edit Label';
+$string['delete_label'] = 'Delete Label';
+$string['label_name'] = 'Label Name';
+$string['label_description'] = 'Description';
+$string['confirm_delete_label'] = 'Are you sure you want to delete the label "{$a}"?';
+$string['no_labels'] = 'No labels found. Click "Add Label" to create one.';
+$string['invalidlabelid'] = 'The label does not exist';
 
 // Resources page.
 $string['resources_page_title'] = 'Resources & Authors Management';

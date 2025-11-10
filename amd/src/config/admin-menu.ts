@@ -34,7 +34,7 @@ export function getAdminMenuItems(activePage: string = ''): MenuItem[] {
             active: activePage === 'resources'
         },
         {
-            name: "Categories",
+            name: "Labels & Categories",
             url: "/local/reblibrary/admin/categories.php",
             icon: "fa fa-tags",
             active: activePage === 'categories'

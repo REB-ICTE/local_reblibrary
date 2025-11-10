@@ -91,6 +91,8 @@
         <FIELD NAME="file_url" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="URL or path to the digital resource file"/>
         <FIELD NAME="cover_image_url" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="URL to the cover image"/>
         <FIELD NAME="author_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Links to author"/>
+        <FIELD NAME="visible" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Visibility flag: 1=visible, 0=hidden"/>
+        <FIELD NAME="media_type" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="text" SEQUENCE="false" COMMENT="Media type: text, audio, or video"/>
         <FIELD NAME="created_at" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Unix timestamp when record was created"/>
       </FIELDS>
       <KEYS>
@@ -101,6 +103,8 @@
         <INDEX NAME="isbn" UNIQUE="true" FIELDS="isbn"/>
         <INDEX NAME="title" UNIQUE="false" FIELDS="title"/>
         <INDEX NAME="author_id" UNIQUE="false" FIELDS="author_id"/>
+        <INDEX NAME="visible" UNIQUE="false" FIELDS="visible"/>
+        <INDEX NAME="media_type" UNIQUE="false" FIELDS="media_type"/>
         <INDEX NAME="created_at" UNIQUE="false" FIELDS="created_at"/>
       </INDEXES>
     </TABLE>
@@ -111,6 +115,7 @@
         <FIELD NAME="category_name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="e.g., Physics, History"/>
         <FIELD NAME="parent_category_id" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Self-references for nesting. NULL for top-level"/>
         <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional description of the category"/>
+        <FIELD NAME="visible" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Visibility flag: 1=visible, 0=hidden"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -118,6 +123,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="category_name" UNIQUE="false" FIELDS="category_name"/>
+        <INDEX NAME="visible" UNIQUE="false" FIELDS="visible"/>
       </INDEXES>
     </TABLE>
 
@@ -157,6 +163,38 @@
       <INDEXES>
         <INDEX NAME="resource_idx" UNIQUE="false" FIELDS="resource_id"/>
         <INDEX NAME="category_idx" UNIQUE="false" FIELDS="category_id"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_reblibrary_labels" COMMENT="Labels/tags for resources">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="label_name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Label/tag name"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional description of the label"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="label_name" UNIQUE="true" FIELDS="label_name"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_reblibrary_res_labels" COMMENT="Many-to-many relationship between resources and labels">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="resource_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="label_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="resource_id" TYPE="foreign" FIELDS="resource_id" REFTABLE="local_reblibrary_resources" REFFIELDS="id"/>
+        <KEY NAME="label_id" TYPE="foreign" FIELDS="label_id" REFTABLE="local_reblibrary_labels" REFFIELDS="id"/>
+        <KEY NAME="resource_label" TYPE="unique" FIELDS="resource_id, label_id" COMMENT="Prevents duplicate resource-label pairs"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="resource_idx" UNIQUE="false" FIELDS="resource_id"/>
+        <INDEX NAME="label_idx" UNIQUE="false" FIELDS="label_id"/>
       </INDEXES>
     </TABLE>
   </TABLES>

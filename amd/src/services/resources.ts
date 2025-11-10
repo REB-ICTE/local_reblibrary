@@ -19,9 +19,12 @@ export interface Resource {
     description?: string;
     cover_image_url?: string;
     file_url?: string;
+    visible?: number;
+    media_type?: string;
     created_at: number;
     class_ids?: (number | string)[];
     category_ids?: (number | string)[];
+    label_ids?: (number | string)[];
 }
 
 export interface CreateResourceData {
@@ -31,6 +34,8 @@ export interface CreateResourceData {
     description?: string;
     cover_image_url?: string;
     file_url?: string;
+    visible?: number;
+    media_type?: string;
 }
 
 export interface UpdateResourceData {
@@ -40,6 +45,8 @@ export interface UpdateResourceData {
     description?: string;
     cover_image_url?: string;
     file_url?: string;
+    visible?: number;
+    media_type?: string;
 }
 
 export interface ResourceFilters {
@@ -48,6 +55,7 @@ export interface ResourceFilters {
     sublevelId?: number;
     classId?: number;
     categoryId?: number;
+    labelId?: number;
 }
 
 /**
@@ -71,6 +79,7 @@ export const ResourceService = {
                         sublevel_id: filters?.sublevelId || 0,
                         class_id: filters?.classId || 0,
                         category_id: filters?.categoryId || 0,
+                        label_id: filters?.labelId || 0,
                     }
                 }])[0]
                     .then((data: Resource[]) => resolve(data))
@@ -115,7 +124,9 @@ export const ResourceService = {
                         author_id: data.author_id,
                         description: data.description,
                         cover_image_url: data.cover_image_url,
-                        file_url: data.file_url
+                        file_url: data.file_url,
+                        visible: data.visible ?? 1,
+                        media_type: data.media_type ?? 'text'
                     }
                 }])[0]
                     .then((result: Resource) => resolve(result))

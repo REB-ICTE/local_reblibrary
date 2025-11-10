@@ -52,6 +52,8 @@ class resources extends external_api {
             'sublevel_id' => new external_value(PARAM_INT, 'Filter by education sublevel ID', VALUE_DEFAULT, 0),
             'class_id' => new external_value(PARAM_INT, 'Filter by class ID', VALUE_DEFAULT, 0),
             'category_id' => new external_value(PARAM_INT, 'Filter by category ID', VALUE_DEFAULT, 0),
+            'label_id' => new external_value(PARAM_INT, 'Filter by label ID', VALUE_DEFAULT, 0),
+            'media_type' => new external_value(PARAM_TEXT, 'Filter by media type (text, audio, video)', VALUE_DEFAULT, ''),
         ]);
     }
 
@@ -63,9 +65,11 @@ class resources extends external_api {
      * @param int $sublevelid Sublevel ID filter
      * @param int $classid Class ID filter
      * @param int $categoryid Category ID filter
+     * @param int $labelid Label ID filter
+     * @param string $mediatype Media type filter
      * @return array List of resources
      */
-    public static function get_all($searchquery = '', $levelid = 0, $sublevelid = 0, $classid = 0, $categoryid = 0) {
+    public static function get_all($searchquery = '', $levelid = 0, $sublevelid = 0, $classid = 0, $categoryid = 0, $labelid = 0, $mediatype = '') {
         global $DB;
 
         // Validate parameters.
@@ -75,6 +79,8 @@ class resources extends external_api {
             'sublevel_id' => $sublevelid,
             'class_id' => $classid,
             'category_id' => $categoryid,
+            'label_id' => $labelid,
+            'media_type' => $mediatype,
         ]);
 
         // Validate context.
@@ -86,7 +92,7 @@ class resources extends external_api {
 
         // Build SQL query with filters (similar to index.php).
         $sql = "SELECT r.id, r.title, r.isbn, r.description, r.file_url, r.cover_image_url,
-                       r.author_id, r.created_at,
+                       r.author_id, r.visible, r.media_type, r.created_at,
                        CONCAT(a.first_name, ' ', a.last_name) as author_name
                 FROM {local_reblibrary_resources} r
                 LEFT JOIN {local_reblibrary_authors} a ON r.author_id = a.id";
@@ -119,6 +125,19 @@ class resources extends external_api {
             $sqlparams['categoryid'] = $params['category_id'];
         }
 
+        // Apply label filter.
+        if ($params['label_id']) {
+            $sql .= " INNER JOIN {local_reblibrary_res_labels} rl ON r.id = rl.resource_id";
+            $whereclauses[] = "rl.label_id = :labelid";
+            $sqlparams['labelid'] = $params['label_id'];
+        }
+
+        // Apply media type filter.
+        if (!empty($params['media_type'])) {
+            $whereclauses[] = "r.media_type = :mediatype";
+            $sqlparams['mediatype'] = $params['media_type'];
+        }
+
         // Apply search query filter.
         if (!empty($params['search_query'])) {
             $whereclauses[] = "(r.title LIKE :searchquery1 OR
@@ -129,6 +148,9 @@ class resources extends external_api {
             $sqlparams['searchquery2'] = $searchpattern;
             $sqlparams['searchquery3'] = $searchpattern;
         }
+
+        // Apply visibility filter - only show public resources.
+        $whereclauses[] = "r.visible = 1";
 
         // Add WHERE clause if filters are applied.
         if (!empty($whereclauses)) {
@@ -161,6 +183,16 @@ class resources extends external_api {
             $resourcecategories[$assignment->resource_id][] = $assignment->category_id;
         }
 
+        // Get label assignments for each resource.
+        $labelassignments = $DB->get_records('local_reblibrary_res_labels', null, '', 'id, resource_id, label_id');
+        $resourcelabels = [];
+        foreach ($labelassignments as $assignment) {
+            if (!isset($resourcelabels[$assignment->resource_id])) {
+                $resourcelabels[$assignment->resource_id] = [];
+            }
+            $resourcelabels[$assignment->resource_id][] = $assignment->label_id;
+        }
+
         // Build result with assignments.
         $result = [];
         foreach ($resources as $resource) {
@@ -173,9 +205,12 @@ class resources extends external_api {
                 'description' => $resource->description ?? '',
                 'cover_image_url' => $resource->cover_image_url ?? '',
                 'file_url' => $resource->file_url ?? '',
+                'visible' => $resource->visible,
+                'media_type' => $resource->media_type,
                 'created_at' => $resource->created_at,
                 'class_ids' => $resourceclasses[$resource->id] ?? [],
                 'category_ids' => $resourcecategories[$resource->id] ?? [],
+                'label_ids' => $resourcelabels[$resource->id] ?? [],
             ];
         }
 
@@ -198,6 +233,8 @@ class resources extends external_api {
                 'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
                 'cover_image_url' => new external_value(PARAM_URL, 'Cover image URL', VALUE_OPTIONAL),
                 'file_url' => new external_value(PARAM_URL, 'File URL', VALUE_OPTIONAL),
+                'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)'),
+                'media_type' => new external_value(PARAM_TEXT, 'Media type (text, audio, video)'),
                 'created_at' => new external_value(PARAM_INT, 'Creation timestamp'),
                 'class_ids' => new external_multiple_structure(
                     new external_value(PARAM_INT, 'Class ID'),
@@ -207,6 +244,11 @@ class resources extends external_api {
                 'category_ids' => new external_multiple_structure(
                     new external_value(PARAM_INT, 'Category ID'),
                     'Assigned category IDs',
+                    VALUE_OPTIONAL
+                ),
+                'label_ids' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'Label ID'),
+                    'Assigned label IDs',
                     VALUE_OPTIONAL
                 ),
             ])
@@ -253,6 +295,8 @@ class resources extends external_api {
             'description' => $resource->description,
             'cover_image_url' => $resource->cover_image_url,
             'file_url' => $resource->file_url,
+            'visible' => $resource->visible,
+            'media_type' => $resource->media_type,
             'created_at' => $resource->created_at,
         ];
     }
@@ -271,6 +315,8 @@ class resources extends external_api {
             'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
             'cover_image_url' => new external_value(PARAM_URL, 'Cover image URL', VALUE_OPTIONAL),
             'file_url' => new external_value(PARAM_URL, 'File URL', VALUE_OPTIONAL),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)'),
+            'media_type' => new external_value(PARAM_TEXT, 'Media type (text, audio, video)'),
             'created_at' => new external_value(PARAM_INT, 'Creation timestamp'),
         ]);
     }
@@ -288,6 +334,8 @@ class resources extends external_api {
             'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
             'cover_image_url' => new external_value(PARAM_URL, 'Cover image URL', VALUE_OPTIONAL),
             'file_url' => new external_value(PARAM_URL, 'File URL', VALUE_OPTIONAL),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)', VALUE_DEFAULT, 1),
+            'media_type' => new external_value(PARAM_TEXT, 'Media type (text, audio, video)', VALUE_DEFAULT, 'text'),
         ]);
     }
 
@@ -300,9 +348,11 @@ class resources extends external_api {
      * @param string $description
      * @param string $coverimageurl
      * @param string $fileurl
+     * @param int $visible
+     * @param string $mediatype
      * @return array Created resource
      */
-    public static function create($title, $isbn = null, $authorid = 0, $description = null, $coverimageurl = null, $fileurl = null) {
+    public static function create($title, $isbn = null, $authorid = 0, $description = null, $coverimageurl = null, $fileurl = null, $visible = 1, $mediatype = 'text') {
         global $DB;
 
         // Validate parameters.
@@ -313,6 +363,8 @@ class resources extends external_api {
             'description' => $description,
             'cover_image_url' => $coverimageurl,
             'file_url' => $fileurl,
+            'visible' => $visible,
+            'media_type' => $mediatype,
         ]);
 
         // Validate context.
@@ -330,6 +382,8 @@ class resources extends external_api {
         $record->description = $params['description'] ?? null;
         $record->cover_image_url = $params['cover_image_url'] ?? null;
         $record->file_url = $params['file_url'] ?? null;
+        $record->visible = $params['visible'];
+        $record->media_type = $params['media_type'];
         $record->created_at = time();
 
         $id = $DB->insert_record('local_reblibrary_resources', $record);
@@ -344,6 +398,8 @@ class resources extends external_api {
             'description' => $resource->description,
             'cover_image_url' => $resource->cover_image_url,
             'file_url' => $resource->file_url,
+            'visible' => $resource->visible,
+            'media_type' => $resource->media_type,
             'created_at' => $resource->created_at,
         ];
     }
@@ -362,6 +418,8 @@ class resources extends external_api {
             'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
             'cover_image_url' => new external_value(PARAM_URL, 'Cover image URL', VALUE_OPTIONAL),
             'file_url' => new external_value(PARAM_URL, 'File URL', VALUE_OPTIONAL),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)'),
+            'media_type' => new external_value(PARAM_TEXT, 'Media type (text, audio, video)'),
             'created_at' => new external_value(PARAM_INT, 'Creation timestamp'),
         ]);
     }
@@ -380,6 +438,8 @@ class resources extends external_api {
             'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
             'cover_image_url' => new external_value(PARAM_URL, 'Cover image URL', VALUE_OPTIONAL),
             'file_url' => new external_value(PARAM_URL, 'File URL', VALUE_OPTIONAL),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)', VALUE_OPTIONAL),
+            'media_type' => new external_value(PARAM_TEXT, 'Media type (text, audio, video)', VALUE_OPTIONAL),
         ]);
     }
 
@@ -393,9 +453,11 @@ class resources extends external_api {
      * @param string $description
      * @param string $coverimageurl
      * @param string $fileurl
+     * @param int $visible
+     * @param string $mediatype
      * @return array Updated resource
      */
-    public static function update($id, $title = null, $isbn = null, $authorid = null, $description = null, $coverimageurl = null, $fileurl = null) {
+    public static function update($id, $title = null, $isbn = null, $authorid = null, $description = null, $coverimageurl = null, $fileurl = null, $visible = null, $mediatype = null) {
         global $DB;
 
         // Validate parameters.
@@ -407,6 +469,8 @@ class resources extends external_api {
             'description' => $description,
             'cover_image_url' => $coverimageurl,
             'file_url' => $fileurl,
+            'visible' => $visible,
+            'media_type' => $mediatype,
         ]);
 
         // Validate context.
@@ -437,6 +501,12 @@ class resources extends external_api {
         if (isset($params['file_url'])) {
             $resource->file_url = $params['file_url'];
         }
+        if (array_key_exists('visible', $params)) {
+            $resource->visible = $params['visible'];
+        }
+        if (array_key_exists('media_type', $params)) {
+            $resource->media_type = $params['media_type'];
+        }
 
         $DB->update_record('local_reblibrary_resources', $resource);
 
@@ -450,6 +520,8 @@ class resources extends external_api {
             'description' => $updated->description,
             'cover_image_url' => $updated->cover_image_url,
             'file_url' => $updated->file_url,
+            'visible' => $updated->visible,
+            'media_type' => $updated->media_type,
             'created_at' => $updated->created_at,
         ];
     }
@@ -468,6 +540,8 @@ class resources extends external_api {
             'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
             'cover_image_url' => new external_value(PARAM_URL, 'Cover image URL', VALUE_OPTIONAL),
             'file_url' => new external_value(PARAM_URL, 'File URL', VALUE_OPTIONAL),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)'),
+            'media_type' => new external_value(PARAM_TEXT, 'Media type (text, audio, video)'),
             'created_at' => new external_value(PARAM_INT, 'Creation timestamp'),
         ]);
     }

@@ -7,9 +7,12 @@ import { ResourceService, CreateResourceData, UpdateResourceData } from "../../s
 import { AuthorService, CreateAuthorData, UpdateAuthorData } from "../../services/authors";
 import { CategoryService } from "../../services/categories";
 import type { Category } from "../../services/categories";
+import { LabelService } from "../../services/labels";
+import type { Label } from "../../services/labels";
 import { getClasses, getResourceAssignments, assignToClasses } from "../../services/assignments";
 import type { Class } from "../../services/assignments";
 import { getResourceCategories, assignCategories } from "../../services/resource-categories";
+import { getResourceLabels, assignLabels } from "../../services/resource-labels";
 import Sidebar from "../shared/Sidebar";
 import Toast from "../shared/Toast";
 import { getAdminMenuItems } from "../../config/admin-menu";
@@ -48,16 +51,18 @@ export default function Resources({
         authorsSignal.value = initialAuthors;
     }, [initialResources, initialAuthors]);
 
-    // Load assignment data (classes, categories)
+    // Load assignment data (classes, categories, labels)
     useEffect(() => {
         const loadAssignmentData = async () => {
             try {
-                const [classesData, categoriesData] = await Promise.all([
+                const [classesData, categoriesData, labelsData] = await Promise.all([
                     getClasses(),
                     CategoryService.getAll(),
+                    LabelService.getAll(),
                 ]);
                 setClasses(classesData);
                 setCategories(categoriesData);
+                setLabels(labelsData);
             } catch (error) {
                 console.error('Failed to load assignment data:', error);
             }
@@ -82,6 +87,8 @@ export default function Resources({
         description: '',
         cover_image_url: '',
         file_url: '',
+        visible: 1,
+        media_type: 'text',
     });
 
     const [authorFormData, setAuthorFormData] = useState<CreateAuthorData>({
@@ -98,8 +105,10 @@ export default function Resources({
     // Assignment data
     const [classes, setClasses] = useState<Class[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [labels, setLabels] = useState<Label[]>([]);
     const [selectedClassIds, setSelectedClassIds] = useState<number[]>([]);
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+    const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
 
     // Resource handlers
     const handleAddResource = () => {
@@ -111,9 +120,12 @@ export default function Resources({
             description: '',
             cover_image_url: '',
             file_url: '',
+            visible: 1,
+            media_type: 'text',
         });
         setSelectedClassIds([]);
         setSelectedCategoryIds([]);
+        setSelectedLabelIds([]);
         setShowResourceForm(true);
     };
 
@@ -126,21 +138,26 @@ export default function Resources({
             description: resource.description || '',
             cover_image_url: resource.cover_image_url || '',
             file_url: resource.file_url || '',
+            visible: resource.visible ?? 1,
+            media_type: resource.media_type || 'text',
         });
 
         // Load existing assignments
         try {
-            const [assignments, categoryAssignments] = await Promise.all([
+            const [assignments, categoryAssignments, labelAssignments] = await Promise.all([
                 getResourceAssignments(resource.id),
                 getResourceCategories(resource.id),
+                getResourceLabels(resource.id),
             ]);
             setSelectedClassIds(assignments.class_ids);
             setSelectedCategoryIds(categoryAssignments.category_ids);
+            setSelectedLabelIds(labelAssignments.label_ids);
         } catch (error) {
             console.error('Failed to load resource assignments:', error);
             // Reset to empty arrays on error
             setSelectedClassIds([]);
             setSelectedCategoryIds([]);
+            setSelectedLabelIds([]);
         }
 
         setShowResourceForm(true);
@@ -224,6 +241,8 @@ export default function Resources({
                     description: formDataWithUrls.description,
                     cover_image_url: formDataWithUrls.cover_image_url,
                     file_url: formDataWithUrls.file_url,
+                    visible: formDataWithUrls.visible,
+                    media_type: formDataWithUrls.media_type,
                 };
                 const updated = await ResourceService.update(editingResource.id, updateData);
                 resourcesSignal.value = resourcesSignal.value.map(r =>
@@ -240,6 +259,7 @@ export default function Resources({
             await Promise.all([
                 assignToClasses(resourceId, selectedClassIds),
                 assignCategories(resourceId, selectedCategoryIds),
+                assignLabels(resourceId, selectedLabelIds),
             ]);
 
             successSignal.value = editingResource ? 'Resource updated successfully' : 'Resource created successfully';
@@ -476,6 +496,35 @@ export default function Resources({
                                                     </select>
                                                 </div>
 
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Visibility
+                                                    </label>
+                                                    <select
+                                                        value={resourceFormData.visible}
+                                                        onChange={(e) => setResourceFormData({ ...resourceFormData, visible: parseInt((e.target as HTMLSelectElement).value) })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                    >
+                                                        <option value="1">Visible (Public)</option>
+                                                        <option value="0">Hidden (Private)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Media Type
+                                                    </label>
+                                                    <select
+                                                        value={resourceFormData.media_type}
+                                                        onChange={(e) => setResourceFormData({ ...resourceFormData, media_type: (e.target as HTMLSelectElement).value })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                    >
+                                                        <option value="text">Text/PDF</option>
+                                                        <option value="audio">Audio</option>
+                                                        <option value="video">Video</option>
+                                                    </select>
+                                                </div>
+
                                                 <div className="md:col-span-2">
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         PDF File <span className="text-red-500">*</span>
@@ -603,7 +652,7 @@ export default function Resources({
                                                         <i className="fa fa-link mr-2 text-gray-600"></i>
                                                         Resource Assignments
                                                     </h4>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                         {/* Classes */}
                                                         <div>
                                                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -646,6 +695,31 @@ export default function Resources({
                                                                 {categories.map((category) => (
                                                                     <option key={category.id} value={category.id}>
                                                                         {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Hold Ctrl (Cmd on Mac) to select multiple
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Labels */}
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Labels
+                                                            </label>
+                                                            <select
+                                                                multiple
+                                                                value={selectedLabelIds.map(String)}
+                                                                onChange={(e) => {
+                                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions).map(opt => parseInt(opt.value));
+                                                                    setSelectedLabelIds(selected);
+                                                                }}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue h-32"
+                                                            >
+                                                                {labels.map((label) => (
+                                                                    <option key={label.id} value={label.id}>
+                                                                        {label.label_name}
                                                                     </option>
                                                                 ))}
                                                             </select>

@@ -49,6 +49,7 @@ class categories extends external_api {
             'category_name' => new external_value(PARAM_TEXT, 'Category name'),
             'parent_category_id' => new external_value(PARAM_INT, 'Parent category ID (0 for top-level)', VALUE_DEFAULT, null),
             'description' => new external_value(PARAM_TEXT, 'Category description', VALUE_DEFAULT, ''),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)', VALUE_DEFAULT, 1),
         ]);
     }
 
@@ -58,15 +59,17 @@ class categories extends external_api {
      * @param string $categoryname Category name
      * @param int|null $parentcategoryid Parent category ID
      * @param string $description Description
+     * @param int $visible Visibility
      * @return array Category data
      */
-    public static function create_category($categoryname, $parentcategoryid, $description) {
+    public static function create_category($categoryname, $parentcategoryid, $description, $visible = 1) {
         global $DB;
 
         $params = self::validate_parameters(self::create_category_parameters(), [
             'category_name' => $categoryname,
             'parent_category_id' => $parentcategoryid,
             'description' => $description,
+            'visible' => $visible,
         ]);
 
         $context = context_system::instance();
@@ -84,6 +87,7 @@ class categories extends external_api {
         $record->category_name = trim($params['category_name']);
         $record->parent_category_id = $params['parent_category_id'] ?: null;
         $record->description = trim($params['description']);
+        $record->visible = $params['visible'];
 
         $id = $DB->insert_record('local_reblibrary_categories', $record);
 
@@ -92,6 +96,7 @@ class categories extends external_api {
             'category_name' => $record->category_name,
             'parent_category_id' => $record->parent_category_id,
             'description' => $record->description,
+            'visible' => $record->visible,
         ];
     }
 
@@ -106,6 +111,7 @@ class categories extends external_api {
             'category_name' => new external_value(PARAM_TEXT, 'Category name'),
             'parent_category_id' => new external_value(PARAM_INT, 'Parent category ID', VALUE_OPTIONAL),
             'description' => new external_value(PARAM_TEXT, 'Description'),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)'),
         ]);
     }
 
@@ -120,6 +126,7 @@ class categories extends external_api {
             'category_name' => new external_value(PARAM_TEXT, 'Category name'),
             'parent_category_id' => new external_value(PARAM_INT, 'Parent category ID', VALUE_DEFAULT, null),
             'description' => new external_value(PARAM_TEXT, 'Category description', VALUE_DEFAULT, ''),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)', VALUE_OPTIONAL),
         ]);
     }
 
@@ -130,9 +137,10 @@ class categories extends external_api {
      * @param string $categoryname Category name
      * @param int|null $parentcategoryid Parent category ID
      * @param string $description Description
+     * @param int $visible Visibility
      * @return array Updated category data
      */
-    public static function update_category($id, $categoryname, $parentcategoryid, $description) {
+    public static function update_category($id, $categoryname, $parentcategoryid, $description, $visible = null) {
         global $DB;
 
         $params = self::validate_parameters(self::update_category_parameters(), [
@@ -140,6 +148,7 @@ class categories extends external_api {
             'category_name' => $categoryname,
             'parent_category_id' => $parentcategoryid,
             'description' => $description,
+            'visible' => $visible,
         ]);
 
         $context = context_system::instance();
@@ -163,6 +172,9 @@ class categories extends external_api {
         $record->category_name = trim($params['category_name']);
         $record->parent_category_id = $params['parent_category_id'] ?: null;
         $record->description = trim($params['description']);
+        if (isset($params['visible'])) {
+            $record->visible = $params['visible'];
+        }
 
         $DB->update_record('local_reblibrary_categories', $record);
 
@@ -171,6 +183,7 @@ class categories extends external_api {
             'category_name' => $record->category_name,
             'parent_category_id' => $record->parent_category_id,
             'description' => $record->description,
+            'visible' => $record->visible,
         ];
     }
 
@@ -185,6 +198,7 @@ class categories extends external_api {
             'category_name' => new external_value(PARAM_TEXT, 'Category name'),
             'parent_category_id' => new external_value(PARAM_INT, 'Parent category ID', VALUE_OPTIONAL),
             'description' => new external_value(PARAM_TEXT, 'Description'),
+            'visible' => new external_value(PARAM_INT, 'Visibility (1=visible, 0=hidden)'),
         ]);
     }
 
