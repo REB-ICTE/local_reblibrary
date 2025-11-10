@@ -52,8 +52,8 @@ $PAGE->add_body_class('local-reblibrary-reading-materials');
 // Load custom CSS.
 $PAGE->requires->css('/local/reblibrary/styles.css');
 
-// Load JavaScript module for library home.
-$PAGE->requires->js_call_amd('local_reblibrary/library-home', 'init');
+// Load JavaScript module for reading materials.
+$PAGE->requires->js_call_amd('local_reblibrary/reading-materials', 'init');
 
 // Fetch all resources from database with author information, class assignments, and categories.
 global $DB;
@@ -263,5 +263,5 @@ $templatecontext = [
 
 // Output the page.
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('local_reblibrary/library_home', $templatecontext);
+echo $OUTPUT->render_from_template('local_reblibrary/reading_materials', $templatecontext);
 echo $OUTPUT->footer();
