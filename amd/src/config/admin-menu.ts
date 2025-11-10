@@ -6,12 +6,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-export interface MenuItem {
-    name: string;
-    url: string;
-    icon: string;
-    active?: boolean;
-}
+import type { MenuItem } from '../types';
 
 /**
  * Get admin menu items.

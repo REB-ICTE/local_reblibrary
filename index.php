@@ -27,6 +27,13 @@
 
 require_once('../../config.php');
 
+// Auto-login as guest if user is not logged in (for public library access).
+if (!isloggedin()) {
+    // Get guest user and complete login automatically.
+    $guest = guest_user();
+    complete_user_login($guest);
+}
+
 // Allow both authenticated users and guests to access this page.
 require_login(null, true);
 
@@ -51,16 +58,68 @@ $PAGE->requires->js_call_amd('local_reblibrary/library-home', 'init');
 // Fetch all resources from database with author information, class assignments, and categories.
 global $DB;
 
-// Get resources with author info.
+// Get URL filter parameters.
+$levelid = optional_param('level_id', null, PARAM_INT);
+$sublevelid = optional_param('sublevel_id', null, PARAM_INT);
+$classid = optional_param('class_id', null, PARAM_INT);
+$categoryid = optional_param('category_id', null, PARAM_INT);
+$searchquery = optional_param('q', '', PARAM_TEXT);
+
+// Build SQL query with filters.
 $sql = "SELECT r.id, r.title, r.isbn, r.description, r.file_url, r.cover_image_url,
                r.author_id, r.created_at,
                CONCAT(a.first_name, ' ', a.last_name) as author_name,
                a.first_name, a.last_name
         FROM {local_reblibrary_resources} r
-        LEFT JOIN {local_reblibrary_authors} a ON r.author_id = a.id
-        ORDER BY r.created_at DESC";
+        LEFT JOIN {local_reblibrary_authors} a ON r.author_id = a.id";
 
-$resources = $DB->get_records_sql($sql);
+$whereclauses = [];
+$params = [];
+
+// Apply class/sublevel/level filters via resource assignments.
+if ($classid) {
+    $sql .= " INNER JOIN {local_reblibrary_res_assigns} ra ON r.id = ra.resource_id";
+    $whereclauses[] = "ra.class_id = :classid";
+    $params['classid'] = $classid;
+} else if ($sublevelid) {
+    $sql .= " INNER JOIN {local_reblibrary_res_assigns} ra ON r.id = ra.resource_id
+              INNER JOIN {local_reblibrary_classes} c ON ra.class_id = c.id";
+    $whereclauses[] = "c.sublevel_id = :sublevelid";
+    $params['sublevelid'] = $sublevelid;
+} else if ($levelid) {
+    $sql .= " INNER JOIN {local_reblibrary_res_assigns} ra ON r.id = ra.resource_id
+              INNER JOIN {local_reblibrary_classes} c ON ra.class_id = c.id
+              INNER JOIN {local_reblibrary_edu_sublevels} s ON c.sublevel_id = s.id";
+    $whereclauses[] = "s.level_id = :levelid";
+    $params['levelid'] = $levelid;
+}
+
+// Apply category filter.
+if ($categoryid) {
+    $sql .= " INNER JOIN {local_reblibrary_res_categories} rc ON r.id = rc.resource_id";
+    $whereclauses[] = "rc.category_id = :categoryid";
+    $params['categoryid'] = $categoryid;
+}
+
+// Apply search query filter.
+if (!empty($searchquery)) {
+    $whereclauses[] = "(r.title LIKE :searchquery1 OR
+                        CONCAT(a.first_name, ' ', a.last_name) LIKE :searchquery2 OR
+                        r.description LIKE :searchquery3)";
+    $searchpattern = '%' . $DB->sql_like_escape($searchquery) . '%';
+    $params['searchquery1'] = $searchpattern;
+    $params['searchquery2'] = $searchpattern;
+    $params['searchquery3'] = $searchpattern;
+}
+
+// Add WHERE clause if filters are applied.
+if (!empty($whereclauses)) {
+    $sql .= " WHERE " . implode(' AND ', $whereclauses);
+}
+
+$sql .= " ORDER BY r.created_at DESC";
+
+$resources = $DB->get_records_sql($sql, $params);
 
 // Get class assignments for each resource.
 $classassignments = $DB->get_records('local_reblibrary_res_assigns', null, '', 'id, resource_id, class_id');
@@ -156,6 +215,9 @@ foreach ($categories as $category) {
     ];
 }
 
+// Check if user has admin capabilities (for showing/hiding admin menu).
+$isadmin = isloggedin() && !isguestuser() && has_capability('moodle/site:config', $context);
+
 // Prepare data for template.
 $templatecontext = [
     'resources_json' => json_encode($resourcesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
@@ -163,6 +225,7 @@ $templatecontext = [
     'sublevels_json' => json_encode($sublevelsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
     'classes_json' => json_encode($classesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
     'categories_json' => json_encode($categoriesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'is_admin' => $isadmin,
 ];
 
 // Output the page.

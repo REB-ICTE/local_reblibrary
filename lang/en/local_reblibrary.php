@@ -201,3 +201,9 @@ $string['miniopresignedfailed'] = 'Failed to generate presigned URL';
 $string['minioaclfailed'] = 'Failed to set object ACL';
 $string['miniodeletefailed'] = 'Failed to delete object from MinIO';
 $string['miniouploaderror'] = 'MinIO upload error';
+
+// File download errors.
+$string['invalidfilekey'] = 'Invalid file key';
+$string['filenotfound'] = 'File not found';
+$string['downloaderror'] = 'Error downloading file';
+$string['uploadfailed'] = 'File upload failed';

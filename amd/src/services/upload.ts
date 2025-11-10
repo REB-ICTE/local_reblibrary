@@ -16,19 +16,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dis
 declare const require: any;
 
 /**
- * Upload URLs response from backend
- */
-export interface UploadUrls {
-  pdf_hash: string;
-  pdf_exists: boolean;
-  pdf_upload_url?: string;
-  pdf_public_url: string;
-  cover_upload_url: string;
-  cover_public_url: string;
-  expires_in: number;
-}
-
-/**
  * Upload progress information
  */
 export interface UploadProgress {
@@ -64,76 +51,67 @@ export async function computeFileHash(file: File): Promise<string> {
 }
 
 /**
- * Request upload URLs from backend.
+ * Convert blob/file to base64 string.
  *
- * @param pdfHash SHA-256 hash of PDF file
- * @returns Promise resolving to upload URLs
+ * @param blob Blob or File to convert
+ * @returns Promise resolving to base64 string (without data: prefix)
  */
-export async function requestUploadUrls(pdfHash: string): Promise<UploadUrls> {
+async function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
-    require(['core/ajax'], (ajax: any) => {
-      ajax.call([{
-        methodname: 'local_reblibrary_generate_upload_urls',
-        args: { pdf_hash: pdfHash }
-      }])[0]
-        .then((data: UploadUrls) => resolve(data))
-        .catch((error: any) => {
-          console.error('Failed to request upload URLs:', error);
-          reject(new Error(error.message || 'Failed to generate upload URLs'));
-        });
-    });
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      // Remove data:...;base64, prefix
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
 }
 
 /**
- * Upload file to MinIO using presigned URL.
+ * Upload PDF and cover to backend API.
  *
- * @param file File or Blob to upload
- * @param presignedUrl Presigned PUT URL from backend
- * @param contentType MIME type of the file
- * @param onProgress Progress callback (percentage 0-100)
- * @returns Promise that resolves when upload completes
+ * @param pdfHash SHA-256 hash of PDF file
+ * @param pdfFile PDF file
+ * @param coverBlob Cover image blob (JPEG)
+ * @returns Promise resolving to upload result
  */
-export async function uploadToMinIO(
-  file: File | Blob,
-  presignedUrl: string,
-  contentType: string,
-  onProgress?: (progress: number, bytesUploaded: number, bytesTotal: number) => void
-): Promise<void> {
+async function uploadViaBackend(
+  pdfHash: string,
+  pdfFile: File,
+  coverBlob: Blob
+): Promise<{ pdfUrl: string; coverUrl: string }> {
+  // Convert files to base64
+  const pdfBase64 = await blobToBase64(pdfFile);
+  const coverBase64 = await blobToBase64(coverBlob);
+
   return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-
-    // Track upload progress
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable && onProgress) {
-        const percentage = Math.round((e.loaded / e.total) * 100);
-        onProgress(percentage, e.loaded, e.total);
-      }
+    require(['core/ajax'], (ajax: any) => {
+      ajax.call([{
+        methodname: 'local_reblibrary_upload_resource_file',
+        args: {
+          pdf_hash: pdfHash,
+          pdf_content: pdfBase64,
+          cover_content: coverBase64,
+        }
+      }])[0]
+        .then((result: any) => {
+          if (result.success) {
+            resolve({
+              pdfUrl: result.pdf_url,
+              coverUrl: result.cover_url,
+            });
+          } else {
+            reject(new Error('Upload failed'));
+          }
+        })
+        .catch((error: any) => {
+          console.error('Backend upload failed:', error);
+          reject(new Error(error.message || 'Failed to upload files'));
+        });
     });
-
-    // Handle successful upload
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
-      } else {
-        reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
-      }
-    });
-
-    // Handle network errors
-    xhr.addEventListener('error', () => {
-      reject(new Error('Network error during upload'));
-    });
-
-    // Handle abort
-    xhr.addEventListener('abort', () => {
-      reject(new Error('Upload cancelled by user'));
-    });
-
-    // Perform upload
-    xhr.open('PUT', presignedUrl);
-    xhr.setRequestHeader('Content-Type', contentType);
-    xhr.send(file);
   });
 }
 
@@ -250,11 +228,11 @@ export function formatFileSize(bytes: number): string {
 
 /**
  * Complete upload workflow for PDF resource file.
- * Handles hashing, deduplication check, upload, and cover extraction.
+ * Handles hashing, cover extraction, and backend upload (no S3 APIs from client).
  *
  * @param pdfFile PDF file to upload
  * @param onProgress Progress callback
- * @returns Promise resolving to public URLs for PDF and cover
+ * @returns Promise resolving to proxy URLs for PDF and cover
  */
 export async function uploadResourceFiles(
   pdfFile: File,
@@ -273,60 +251,14 @@ export async function uploadResourceFiles(
 
     onProgress({
       stage: 'hashing',
-      progress: 15,
+      progress: 20,
       message: 'File hash computed',
     });
 
-    // Stage 2: Request URLs
-    onProgress({
-      stage: 'requesting_urls',
-      progress: 20,
-      message: 'Requesting upload URLs...',
-    });
-
-    const urls = await requestUploadUrls(pdfHash);
-
-    // Stage 3: Upload PDF (if needed)
-    if (!urls.pdf_exists && urls.pdf_upload_url) {
-      onProgress({
-        stage: 'uploading_pdf',
-        progress: 30,
-        message: `Uploading PDF (${formatFileSize(pdfFile.size)})...`,
-        bytesTotal: pdfFile.size,
-      });
-
-      await uploadToMinIO(
-        pdfFile,
-        urls.pdf_upload_url,
-        'application/pdf',
-        (percentage, uploaded, total) => {
-          onProgress({
-            stage: 'uploading_pdf',
-            progress: 30 + (percentage * 0.3), // 30-60%
-            message: `Uploading PDF... ${percentage}%`,
-            bytesUploaded: uploaded,
-            bytesTotal: total,
-          });
-        }
-      );
-
-      onProgress({
-        stage: 'uploading_pdf',
-        progress: 60,
-        message: 'PDF uploaded successfully',
-      });
-    } else {
-      onProgress({
-        stage: 'uploading_pdf',
-        progress: 60,
-        message: 'PDF already exists in storage (skipped upload)',
-      });
-    }
-
-    // Stage 4: Extract cover
+    // Stage 2: Extract cover
     onProgress({
       stage: 'extracting_cover',
-      progress: 65,
+      progress: 25,
       message: 'Extracting cover image from first page...',
     });
 
@@ -334,32 +266,19 @@ export async function uploadResourceFiles(
 
     onProgress({
       stage: 'extracting_cover',
-      progress: 75,
+      progress: 40,
       message: `Cover extracted (${formatFileSize(coverBlob.size)})`,
     });
 
-    // Stage 5: Upload cover
+    // Stage 3: Upload via backend (PDF + cover in one request)
     onProgress({
-      stage: 'uploading_cover',
-      progress: 80,
-      message: 'Uploading cover image...',
-      bytesTotal: coverBlob.size,
+      stage: 'uploading_pdf',
+      progress: 50,
+      message: `Uploading to backend (${formatFileSize(pdfFile.size + coverBlob.size)})...`,
+      bytesTotal: pdfFile.size + coverBlob.size,
     });
 
-    await uploadToMinIO(
-      coverBlob,
-      urls.cover_upload_url,
-      'image/jpeg',
-      (percentage, uploaded, total) => {
-        onProgress({
-          stage: 'uploading_cover',
-          progress: 80 + (percentage * 0.2), // 80-100%
-          message: `Uploading cover... ${percentage}%`,
-          bytesUploaded: uploaded,
-          bytesTotal: total,
-        });
-      }
-    );
+    const result = await uploadViaBackend(pdfHash, pdfFile, coverBlob);
 
     // Complete
     onProgress({
@@ -369,8 +288,8 @@ export async function uploadResourceFiles(
     });
 
     return {
-      pdfUrl: urls.pdf_public_url,
-      coverUrl: urls.cover_public_url,
+      pdfUrl: result.pdfUrl,
+      coverUrl: result.coverUrl,
     };
 
   } catch (error) {

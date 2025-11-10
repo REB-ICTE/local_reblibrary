@@ -150,18 +150,49 @@ export default function LibraryHome({
     initialCategories
 }: LibraryHomeProps) {
     const [resources, setResources] = useState<Resource[]>(initialResources);
-    const [searchQuery, setSearchQuery] = useState('');
     const [viewingResource, setViewingResource] = useState<Resource | null>(null);
 
-    // Filter state
-    const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null);
-    const [selectedSublevelId, setSelectedSublevelId] = useState<number | null>(null);
-    const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
-    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+    // Read search query from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const [searchQuery, setSearchQuery] = useState(urlParams.get('q') || '');
+
+    // Read filter state from URL params (for display purposes in dropdowns)
+    const selectedLevelId = urlParams.get('level_id') ? parseInt(urlParams.get('level_id')!) : null;
+    const selectedSublevelId = urlParams.get('sublevel_id') ? parseInt(urlParams.get('sublevel_id')!) : null;
+    const selectedClassId = urlParams.get('class_id') ? parseInt(urlParams.get('class_id')!) : null;
+    const selectedCategoryId = urlParams.get('category_id') ? parseInt(urlParams.get('category_id')!) : null;
 
     // Menu items
     const libraryMenuItems = getLibraryMenuItems('home');
-    const adminMenuItems = getAdminMenuItems('');
+
+    // Check if user is admin (from PHP)
+    const rootElement = document.getElementById('library-home-root');
+    const isAdmin = rootElement?.dataset.isAdmin === '1';
+    const adminMenuItems = isAdmin ? getAdminMenuItems('') : [];
+
+    // Helper function to navigate with URL params
+    const navigateWithFilters = (params: {
+        level_id?: string | null;
+        sublevel_id?: string | null;
+        class_id?: string | null;
+        category_id?: string | null;
+        q?: string | null;
+    }) => {
+        const url = new URL(window.location.href);
+        const searchParams = url.searchParams;
+
+        // Update or remove each param
+        Object.entries(params).forEach(([key, value]) => {
+            if (value) {
+                searchParams.set(key, value);
+            } else {
+                searchParams.delete(key);
+            }
+        });
+
+        // Navigate to new URL (this will reload the page with new filters)
+        window.location.href = url.pathname + url.search;
+    };
 
     // Filter sublevels based on selected level
     const filteredSublevels = useMemo(() => {
@@ -181,60 +212,68 @@ export default function LibraryHome({
         return initialClasses.filter(c => parseInt(c.sublevel_id as any) === selectedSublevelId);
     }, [selectedLevelId, selectedSublevelId, initialClasses]);
 
-    // Handle level change - reset sublevel and class
+    // Handle level change - navigate with new URL params
     const handleLevelChange = (levelId: number | null) => {
-        setSelectedLevelId(levelId);
-        setSelectedSublevelId(null);
-        setSelectedClassId(null);
+        navigateWithFilters({
+            level_id: levelId ? String(levelId) : null,
+            sublevel_id: null,
+            class_id: null,
+            category_id: selectedCategoryId ? String(selectedCategoryId) : null,
+            q: searchQuery || null
+        });
     };
 
-    // Handle sublevel change - reset class
+    // Handle sublevel change - navigate with new URL params
     const handleSublevelChange = (sublevelId: number | null) => {
-        setSelectedSublevelId(sublevelId);
-        setSelectedClassId(null);
+        navigateWithFilters({
+            level_id: selectedLevelId ? String(selectedLevelId) : null,
+            sublevel_id: sublevelId ? String(sublevelId) : null,
+            class_id: null,
+            category_id: selectedCategoryId ? String(selectedCategoryId) : null,
+            q: searchQuery || null
+        });
     };
 
-    // Filter resources based on all filters
-    const filteredResources = useMemo(() => {
-        let filtered = resources;
+    // Handle class change - navigate with new URL params
+    const handleClassChange = (classId: number | null) => {
+        navigateWithFilters({
+            level_id: selectedLevelId ? String(selectedLevelId) : null,
+            sublevel_id: selectedSublevelId ? String(selectedSublevelId) : null,
+            class_id: classId ? String(classId) : null,
+            category_id: selectedCategoryId ? String(selectedCategoryId) : null,
+            q: searchQuery || null
+        });
+    };
 
-        // Search filter
-        if (searchQuery) {
-            filtered = filtered.filter(r =>
-                r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                r.author_name?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
+    // Handle category change - navigate with new URL params
+    const handleCategoryChange = (categoryId: number | null) => {
+        navigateWithFilters({
+            level_id: selectedLevelId ? String(selectedLevelId) : null,
+            sublevel_id: selectedSublevelId ? String(selectedSublevelId) : null,
+            class_id: selectedClassId ? String(selectedClassId) : null,
+            category_id: categoryId ? String(categoryId) : null,
+            q: searchQuery || null
+        });
+    };
 
-        // Class filter
-        if (selectedClassId) {
-            filtered = filtered.filter(r =>
-                r.class_ids && r.class_ids.map(id => parseInt(id as any)).includes(selectedClassId)
-            );
-        } else if (selectedSublevelId) {
-            // If sublevel is selected but not class, show all resources for classes in that sublevel
-            const sublevelClassIds = filteredClasses.map(c => parseInt(c.id as any));
-            filtered = filtered.filter(r =>
-                r.class_ids && r.class_ids.map(id => parseInt(id as any)).some(id => sublevelClassIds.includes(id))
-            );
-        } else if (selectedLevelId) {
-            // If only level is selected, show all resources for classes in that level
-            const levelClasses = initialClasses.filter(c => parseInt(c.level_id as any) === selectedLevelId);
-            const levelClassIds = levelClasses.map(c => parseInt(c.id as any));
-            filtered = filtered.filter(r =>
-                r.class_ids && r.class_ids.map(id => parseInt(id as any)).some(id => levelClassIds.includes(id))
-            );
-        }
+    // Handle search - navigate with new URL params
+    const handleSearch = (query: string) => {
+        navigateWithFilters({
+            level_id: selectedLevelId ? String(selectedLevelId) : null,
+            sublevel_id: selectedSublevelId ? String(selectedSublevelId) : null,
+            class_id: selectedClassId ? String(selectedClassId) : null,
+            category_id: selectedCategoryId ? String(selectedCategoryId) : null,
+            q: query || null
+        });
+    };
 
-        // Category filter
-        if (selectedCategoryId) {
-            filtered = filtered.filter(r =>
-                r.category_ids && r.category_ids.map(id => parseInt(id as any)).includes(selectedCategoryId)
-            );
-        }
+    // Clear all filters
+    const clearAllFilters = () => {
+        window.location.href = '/local/reblibrary/index.php';
+    };
 
-        return filtered;
-    }, [resources, searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId, filteredClasses, initialClasses]);
+    // Since filtering is now done on backend, filteredResources is just the resources we received
+    const filteredResources = resources;
 
     // Group resources by class
     const resourcesByClass = useMemo(() => {
@@ -285,7 +324,13 @@ export default function LibraryHome({
 
     return (
         <div className="flex h-screen bg-white overflow-hidden">
-            <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
+            <Sidebar
+                adminMenuItems={adminMenuItems}
+                libraryMenuItems={libraryMenuItems}
+                levels={initialLevels}
+                sublevels={initialSublevels}
+                classes={initialClasses}
+            />
 
             <main className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
                 {viewingResource ? (
@@ -301,15 +346,28 @@ export default function LibraryHome({
                         <div className="max-w-4xl mx-auto">
                             {/* Search Bar */}
                             <div className="mb-3">
-                                <div className="library-search">
+                                <div className="library-search relative">
                                     <i className="fa fa-search search-icon"></i>
                                     <input
                                         type="text"
                                         placeholder="Search books by title or author..."
                                         value={searchQuery}
                                         onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSearch(searchQuery);
+                                            }
+                                        }}
                                         className="search-input"
+                                        style={{ paddingRight: '90px' }}
                                     />
+                                    <button
+                                        onClick={() => handleSearch(searchQuery)}
+                                        className="absolute right-2 top-1/2 px-3 py-1 bg-reb-blue text-white rounded hover:bg-blue-700 text-sm"
+                                        style={{ transform: 'translateY(-50%)' }}
+                                    >
+                                        Search
+                                    </button>
                                 </div>
                             </div>
 
@@ -352,7 +410,7 @@ export default function LibraryHome({
                             <div className="inline-block">
                                 <select
                                     value={selectedClassId || ''}
-                                    onChange={(e) => setSelectedClassId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    onChange={(e) => handleClassChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
                                     className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
                                 >
                                     <option value="">All Classes</option>
@@ -368,7 +426,7 @@ export default function LibraryHome({
                             <div className="inline-block">
                                 <select
                                     value={selectedCategoryId || ''}
-                                    onChange={(e) => setSelectedCategoryId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    onChange={(e) => handleCategoryChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
                                     className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
                                 >
                                     <option value="">All Categories</option>
@@ -383,13 +441,7 @@ export default function LibraryHome({
                             {/* Clear Filters Button */}
                             {(selectedLevelId || selectedSublevelId || selectedClassId || selectedCategoryId || searchQuery) && (
                                 <button
-                                    onClick={() => {
-                                        setSelectedLevelId(null);
-                                        setSelectedSublevelId(null);
-                                        setSelectedClassId(null);
-                                        setSelectedCategoryId(null);
-                                        setSearchQuery('');
-                                    }}
+                                    onClick={clearAllFilters}
                                     className="px-4 py-2.5 bg-gray-100 border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
                                 >
                                     <i className="fa fa-times mr-1"></i>
@@ -445,13 +497,7 @@ export default function LibraryHome({
                                 <i className="fa fa-book text-6xl text-gray-300 mb-4"></i>
                                 <p>No books found matching your filters.</p>
                                 <button
-                                    onClick={() => {
-                                        setSelectedLevelId(null);
-                                        setSelectedSublevelId(null);
-                                        setSelectedClassId(null);
-                                        setSelectedCategoryId(null);
-                                        setSearchQuery('');
-                                    }}
+                                    onClick={clearAllFilters}
                                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                                 >
                                     Clear Filters
