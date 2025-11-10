@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'REB Library';
+$string['pluginname'] = 'Library';
 
 // Header strings.
 $string['header_logo'] = 'library.';
