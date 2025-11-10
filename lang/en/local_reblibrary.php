@@ -221,3 +221,11 @@ $string['invalidfilekey'] = 'Invalid file key';
 $string['filenotfound'] = 'File not found';
 $string['downloaderror'] = 'Error downloading file';
 $string['uploadfailed'] = 'File upload failed';
+
+// Home page filtering settings.
+$string['homepagefiltering'] = 'Home Page Filtering';
+$string['homepagefiltering_desc'] = 'Control which resources appear on the public library home page based on labels';
+$string['homepageincludelabels'] = 'Include Labels';
+$string['homepageincludelabels_desc'] = 'Show only resources with these labels on the home page. If empty, all resources are shown (subject to exclude filter).';
+$string['homepageexcludelabels'] = 'Exclude Labels';
+$string['homepageexcludelabels_desc'] = 'Hide resources with these labels from the home page. Exclude takes precedence over include.';

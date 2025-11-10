@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_reblibrary';
-$plugin->version = 2025102504;           // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version = 2025102505;           // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires = 2025041400;          // Requires Moodle 5.0 (Build: 20250414).
 $plugin->maturity = MATURITY_STABLE;     // Code maturity level.
-$plugin->release = '1.5.1';              // Human-readable version name (Added labels UI and web services).
+$plugin->release = '1.5.2';              // Human-readable version name (Added home page label filtering and visibility).

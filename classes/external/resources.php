@@ -152,6 +152,36 @@ class resources extends external_api {
         // Apply visibility filter - only show public resources.
         $whereclauses[] = "r.visible = 1";
 
+        // Apply home page label filtering based on plugin settings.
+        $includelabels = get_config('local_reblibrary', 'homepage_include_labels');
+        $excludelabels = get_config('local_reblibrary', 'homepage_exclude_labels');
+
+        // Parse comma-separated config values to arrays.
+        $includelabelids = $includelabels ? explode(',', $includelabels) : [];
+        $excludelabelids = $excludelabels ? explode(',', $excludelabels) : [];
+
+        // Apply include filter (if configured).
+        if (!empty($includelabelids)) {
+            list($insql, $inparams) = $DB->get_in_or_equal($includelabelids, SQL_PARAMS_NAMED, 'inclbl');
+            $whereclauses[] = "EXISTS (
+                SELECT 1 FROM {local_reblibrary_res_labels} rl_inc
+                WHERE rl_inc.resource_id = r.id
+                AND rl_inc.label_id $insql
+            )";
+            $sqlparams = array_merge($sqlparams, $inparams);
+        }
+
+        // Apply exclude filter (if configured) - uses NOT EXISTS for precedence.
+        if (!empty($excludelabelids)) {
+            list($exsql, $exparams) = $DB->get_in_or_equal($excludelabelids, SQL_PARAMS_NAMED, 'exclbl');
+            $whereclauses[] = "NOT EXISTS (
+                SELECT 1 FROM {local_reblibrary_res_labels} rl_exc
+                WHERE rl_exc.resource_id = r.id
+                AND rl_exc.label_id $exsql
+            )";
+            $sqlparams = array_merge($sqlparams, $exparams);
+        }
+
         // Add WHERE clause if filters are applied.
         if (!empty($whereclauses)) {
             $sql .= " WHERE " . implode(' AND ', $whereclauses);
