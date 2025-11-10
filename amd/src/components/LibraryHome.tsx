@@ -42,6 +42,30 @@ interface BookCardProps {
     onViewBook?: (resource: Resource) => void;
 }
 
+/**
+ * Helper function to get unique categories for a set of resources.
+ */
+const getCategoriesForResources = (classResources: Resource[], allCategories: Category[]): Category[] => {
+    const categoryIds = new Set<number>();
+
+    // Collect all unique category IDs from resources
+    classResources.forEach(resource => {
+        if (resource.category_ids) {
+            resource.category_ids.forEach(id => {
+                categoryIds.add(typeof id === 'string' ? parseInt(id) : id);
+            });
+        }
+    });
+
+    // Map IDs to category objects
+    const categories = Array.from(categoryIds)
+        .map(id => allCategories.find(cat => parseInt(cat.id as any) === id))
+        .filter((cat): cat is Category => cat !== undefined)
+        .sort((a, b) => a.category_name.localeCompare(b.category_name));
+
+    return categories;
+};
+
 const BookCard = ({ resource, onViewBook }: BookCardProps) => {
     const placeholderImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="140" height="200" viewBox="0 0 140 200"%3E%3Crect fill="%23e5e7eb" width="140" height="200"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%239ca3af"%3ENo Cover%3C/text%3E%3C/svg%3E';
 
@@ -65,6 +89,44 @@ const BookCard = ({ resource, onViewBook }: BookCardProps) => {
             <p className="book-author truncate" title={resource.author_name}>{resource.author_name}</p>
             {resource.isbn && <p className="book-isbn truncate" title={`ISBN: ${resource.isbn}`}>ISBN: {resource.isbn}</p>}
         </div>
+    );
+};
+
+interface CategoryBadgeProps {
+    label: string;
+    isSelected: boolean;
+    onClick: () => void;
+}
+
+const CategoryBadge = ({ label, isSelected, onClick }: CategoryBadgeProps) => {
+    return (
+        <button
+            onClick={onClick}
+            className={`
+                px-3 py-1.5 text-xs font-medium
+                transition-all duration-200 ease-in-out
+                ${isSelected
+                    ? 'text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                }
+            `}
+            style={{
+                borderRadius: '9999px',
+                ...(isSelected && { backgroundColor: '#005198' })
+            }}
+            onMouseEnter={(e) => {
+                if (isSelected) {
+                    (e.target as HTMLButtonElement).style.backgroundColor = '#003d75';
+                }
+            }}
+            onMouseLeave={(e) => {
+                if (isSelected) {
+                    (e.target as HTMLButtonElement).style.backgroundColor = '#005198';
+                }
+            }}
+        >
+            {label}
+        </button>
     );
 };
 
@@ -154,6 +216,9 @@ export default function LibraryHome({
     const [viewingResource, setViewingResource] = useState<Resource | null>(null);
     const [isSearching, setIsSearching] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Track selected category per class (classId -> categoryId | 'all')
+    const [selectedCategoryPerClass, setSelectedCategoryPerClass] = useState<Map<number, number | 'all'>>(new Map());
 
     // Read search query from URL params
     const urlParams = new URLSearchParams(window.location.search);
@@ -490,29 +555,90 @@ export default function LibraryHome({
                     <div className="flex-1 overflow-y-auto px-8 pb-8">
                         {/* Main Content Area - Class-based Sections */}
                         {resourcesByClass.length > 0 ? (
-                            resourcesByClass.map(({ class: cls, resources: classResources }) => (
-                                classResources.length > 0 && (
+                            resourcesByClass.map(({ class: cls, resources: classResources }) => {
+                                // Get unique categories for resources in this class
+                                const categories = getCategoriesForResources(classResources, initialCategories);
+                                const classIdNum = parseInt(cls.id as any);
+
+                                // Get or initialize selected category for this class
+                                const selectedCategory = selectedCategoryPerClass.get(classIdNum) || 'all';
+
+                                // Filter resources based on selected category
+                                const filteredClassResources = selectedCategory === 'all'
+                                    ? classResources
+                                    : classResources.filter(resource =>
+                                        resource.category_ids && resource.category_ids.some(
+                                            catId => parseInt(catId as any) === selectedCategory
+                                        )
+                                    );
+
+                                // Handler to update selected category for this class
+                                const handleCategorySelect = (categoryId: number | 'all') => {
+                                    setSelectedCategoryPerClass(prev => {
+                                        const newMap = new Map(prev);
+                                        newMap.set(classIdNum, categoryId);
+                                        return newMap;
+                                    });
+                                };
+
+                                return classResources.length > 0 && (
                                     <section key={cls.id} className="library-section">
-                                        <div className="mb-2">
-                                            <h2 className="section-title text-2xl font-bold text-gray-900">
+                                        <div className="mb-3">
+                                            <h2 className="section-title text-2xl font-bold text-gray-900 mb-2">
                                                 {cls.class_name}
                                             </h2>
-                                            <p className="text-sm text-gray-600 mt-0.5">
-                                                {cls.level_name} → {cls.sublevel_name}
-                                            </p>
-                                        </div>
-                                        <HorizontalScrollContainer>
-                                            <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
-                                                {classResources.map(resource => (
-                                                    <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
-                                                        <BookCard resource={resource} onViewBook={setViewingResource} />
-                                                    </div>
+
+                                            {/* Category badges */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {/* Show "All" badge if there are multiple categories or at least one category */}
+                                                {categories.length > 0 && (
+                                                    <CategoryBadge
+                                                        label="All"
+                                                        isSelected={selectedCategory === 'all'}
+                                                        onClick={() => handleCategorySelect('all')}
+                                                    />
+                                                )}
+
+                                                {/* Show individual category badges */}
+                                                {categories.map(category => (
+                                                    <CategoryBadge
+                                                        key={category.id}
+                                                        label={category.parent_name
+                                                            ? `${category.parent_name} > ${category.category_name}`
+                                                            : category.category_name
+                                                        }
+                                                        isSelected={selectedCategory === parseInt(category.id as any)}
+                                                        onClick={() => handleCategorySelect(parseInt(category.id as any))}
+                                                    />
                                                 ))}
+
+                                                {/* Show "Uncategorized" if no categories */}
+                                                {categories.length === 0 && (
+                                                    <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                                        Uncategorized
+                                                    </span>
+                                                )}
                                             </div>
-                                        </HorizontalScrollContainer>
+                                        </div>
+
+                                        {filteredClassResources.length > 0 ? (
+                                            <HorizontalScrollContainer>
+                                                <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                                                    {filteredClassResources.map(resource => (
+                                                        <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                                            <BookCard resource={resource} onViewBook={setViewingResource} />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </HorizontalScrollContainer>
+                                        ) : (
+                                            <div className="py-8 text-center text-gray-500">
+                                                <p className="text-sm">No resources in this category</p>
+                                            </div>
+                                        )}
                                     </section>
-                                )
-                            ))
+                                );
+                            })
                         ) : unassignedResources.length > 0 ? (
                             <section className="library-section">
                                 <h2 className="section-title">Unassigned Resources</h2>

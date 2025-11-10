@@ -1,4 +1,4 @@
-define(["exports","./assets/styles-CdOy6u85","./assets/signals.module-3dmCatfg","./assets/resources-BlUgWxBT","./assets/categories-pbLMv6fk","./assets/Toast-B8ymjq-B","./assets/library-menu-CfiYMnvq","./assets/pdf-DA_sKXgo","core/ajax"],(function(V,e,B,L,re,W,K,I,Re){"use strict";/**
+define(["exports","./assets/styles-DLNgt1aS","./assets/signals.module-Bq7BcZzI","./assets/resources-BlUgWxBT","./assets/categories-pbLMv6fk","./assets/Toast-DWEEl8AZ","./assets/library-menu-CfiYMnvq","./assets/pdf-DA_sKXgo","core/ajax"],(function(V,e,B,L,re,W,K,I,Re){"use strict";/**
  * Author web service client.
  * Provides methods to interact with local_reblibrary author web services.
  *
