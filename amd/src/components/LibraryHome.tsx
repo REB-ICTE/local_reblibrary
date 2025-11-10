@@ -407,6 +407,22 @@ export default function LibraryHome({
 
                             {/* Filter Bar */}
                             <div className="flex flex-wrap gap-3 justify-center">
+                            {/* Category Filter */}
+                            <div className="inline-block">
+                                <select
+                                    value={selectedCategoryId || ''}
+                                    onChange={(e) => handleCategoryChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
+                                >
+                                    <option value="">Courses and categories</option>
+                                    {initialCategories.map(category => (
+                                        <option key={category.id} value={String(category.id)}>
+                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             {/* Level Filter */}
                             <div className="inline-block">
                                 <select
@@ -451,22 +467,6 @@ export default function LibraryHome({
                                     {filteredClasses.map(cls => (
                                         <option key={cls.id} value={String(cls.id)}>
                                             {cls.class_name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Category Filter */}
-                            <div className="inline-block">
-                                <select
-                                    value={selectedCategoryId || ''}
-                                    onChange={(e) => handleCategoryChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
-                                >
-                                    <option value="">All Categories</option>
-                                    {initialCategories.map(category => (
-                                        <option key={category.id} value={String(category.id)}>
-                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
                                         </option>
                                     ))}
                                 </select>

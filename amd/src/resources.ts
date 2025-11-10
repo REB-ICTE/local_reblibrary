@@ -59,13 +59,6 @@ export const init = (selector: string = '#resources-root') => {
         const eduSublevels: EducationSublevel[] = sublevelsDataAttr ? JSON.parse(sublevelsDataAttr) : [];
         const eduClasses: EducationClass[] = classesDataAttr ? JSON.parse(classesDataAttr) : [];
 
-        console.log('Resources data loaded:', {
-            resources: initialResources.length,
-            authors: initialAuthors.length,
-            levels: eduLevels.length,
-            sublevels: eduSublevels.length,
-            classes: eduClasses.length
-        });
 
         // Render the Preact app
         render(
