@@ -46,16 +46,36 @@ class resources extends external_api {
      * @return external_function_parameters
      */
     public static function get_all_parameters() {
-        return new external_function_parameters([]);
+        return new external_function_parameters([
+            'search_query' => new external_value(PARAM_TEXT, 'Search query for title, author, or description', VALUE_DEFAULT, ''),
+            'level_id' => new external_value(PARAM_INT, 'Filter by education level ID', VALUE_DEFAULT, 0),
+            'sublevel_id' => new external_value(PARAM_INT, 'Filter by education sublevel ID', VALUE_DEFAULT, 0),
+            'class_id' => new external_value(PARAM_INT, 'Filter by class ID', VALUE_DEFAULT, 0),
+            'category_id' => new external_value(PARAM_INT, 'Filter by category ID', VALUE_DEFAULT, 0),
+        ]);
     }
 
     /**
-     * Get all resources.
+     * Get all resources with optional filters.
      *
+     * @param string $searchquery Search query
+     * @param int $levelid Level ID filter
+     * @param int $sublevelid Sublevel ID filter
+     * @param int $classid Class ID filter
+     * @param int $categoryid Category ID filter
      * @return array List of resources
      */
-    public static function get_all() {
+    public static function get_all($searchquery = '', $levelid = 0, $sublevelid = 0, $classid = 0, $categoryid = 0) {
         global $DB;
+
+        // Validate parameters.
+        $params = self::validate_parameters(self::get_all_parameters(), [
+            'search_query' => $searchquery,
+            'level_id' => $levelid,
+            'sublevel_id' => $sublevelid,
+            'class_id' => $classid,
+            'category_id' => $categoryid,
+        ]);
 
         // Validate context.
         $context = context_system::instance();
@@ -64,19 +84,98 @@ class resources extends external_api {
         // Check capability.
         require_capability('local/reblibrary:view', $context);
 
-        $resources = $DB->get_records('local_reblibrary_resources');
+        // Build SQL query with filters (similar to index.php).
+        $sql = "SELECT r.id, r.title, r.isbn, r.description, r.file_url, r.cover_image_url,
+                       r.author_id, r.created_at,
+                       CONCAT(a.first_name, ' ', a.last_name) as author_name
+                FROM {local_reblibrary_resources} r
+                LEFT JOIN {local_reblibrary_authors} a ON r.author_id = a.id";
 
+        $whereclauses = [];
+        $sqlparams = [];
+
+        // Apply class/sublevel/level filters via resource assignments.
+        if ($params['class_id']) {
+            $sql .= " INNER JOIN {local_reblibrary_res_assigns} ra ON r.id = ra.resource_id";
+            $whereclauses[] = "ra.class_id = :classid";
+            $sqlparams['classid'] = $params['class_id'];
+        } else if ($params['sublevel_id']) {
+            $sql .= " INNER JOIN {local_reblibrary_res_assigns} ra ON r.id = ra.resource_id
+                      INNER JOIN {local_reblibrary_classes} c ON ra.class_id = c.id";
+            $whereclauses[] = "c.sublevel_id = :sublevelid";
+            $sqlparams['sublevelid'] = $params['sublevel_id'];
+        } else if ($params['level_id']) {
+            $sql .= " INNER JOIN {local_reblibrary_res_assigns} ra ON r.id = ra.resource_id
+                      INNER JOIN {local_reblibrary_classes} c ON ra.class_id = c.id
+                      INNER JOIN {local_reblibrary_edu_sublevels} s ON c.sublevel_id = s.id";
+            $whereclauses[] = "s.level_id = :levelid";
+            $sqlparams['levelid'] = $params['level_id'];
+        }
+
+        // Apply category filter.
+        if ($params['category_id']) {
+            $sql .= " INNER JOIN {local_reblibrary_res_categories} rc ON r.id = rc.resource_id";
+            $whereclauses[] = "rc.category_id = :categoryid";
+            $sqlparams['categoryid'] = $params['category_id'];
+        }
+
+        // Apply search query filter.
+        if (!empty($params['search_query'])) {
+            $whereclauses[] = "(r.title LIKE :searchquery1 OR
+                                CONCAT(a.first_name, ' ', a.last_name) LIKE :searchquery2 OR
+                                r.description LIKE :searchquery3)";
+            $searchpattern = '%' . $DB->sql_like_escape($params['search_query']) . '%';
+            $sqlparams['searchquery1'] = $searchpattern;
+            $sqlparams['searchquery2'] = $searchpattern;
+            $sqlparams['searchquery3'] = $searchpattern;
+        }
+
+        // Add WHERE clause if filters are applied.
+        if (!empty($whereclauses)) {
+            $sql .= " WHERE " . implode(' AND ', $whereclauses);
+        }
+
+        $sql .= " ORDER BY r.created_at DESC";
+
+        $resources = $DB->get_records_sql($sql, $sqlparams);
+
+        // Get class assignments for each resource.
+        $classassignments = $DB->get_records('local_reblibrary_res_assigns', null, '', 'id, resource_id, class_id');
+        $resourceclasses = [];
+        foreach ($classassignments as $assignment) {
+            if (!isset($resourceclasses[$assignment->resource_id])) {
+                $resourceclasses[$assignment->resource_id] = [];
+            }
+            if ($assignment->class_id) {
+                $resourceclasses[$assignment->resource_id][] = $assignment->class_id;
+            }
+        }
+
+        // Get category assignments for each resource.
+        $categoryassignments = $DB->get_records('local_reblibrary_res_categories', null, '', 'id, resource_id, category_id');
+        $resourcecategories = [];
+        foreach ($categoryassignments as $assignment) {
+            if (!isset($resourcecategories[$assignment->resource_id])) {
+                $resourcecategories[$assignment->resource_id] = [];
+            }
+            $resourcecategories[$assignment->resource_id][] = $assignment->category_id;
+        }
+
+        // Build result with assignments.
         $result = [];
         foreach ($resources as $resource) {
             $result[] = [
                 'id' => $resource->id,
                 'title' => $resource->title,
-                'isbn' => $resource->isbn,
+                'isbn' => $resource->isbn ?? '',
                 'author_id' => $resource->author_id,
-                'description' => $resource->description,
-                'cover_image_url' => $resource->cover_image_url,
-                'file_url' => $resource->file_url,
+                'author_name' => $resource->author_name ?? 'Unknown',
+                'description' => $resource->description ?? '',
+                'cover_image_url' => $resource->cover_image_url ?? '',
+                'file_url' => $resource->file_url ?? '',
                 'created_at' => $resource->created_at,
+                'class_ids' => $resourceclasses[$resource->id] ?? [],
+                'category_ids' => $resourcecategories[$resource->id] ?? [],
             ];
         }
 
@@ -95,10 +194,21 @@ class resources extends external_api {
                 'title' => new external_value(PARAM_TEXT, 'Resource title'),
                 'isbn' => new external_value(PARAM_TEXT, 'ISBN', VALUE_OPTIONAL),
                 'author_id' => new external_value(PARAM_INT, 'Author ID'),
+                'author_name' => new external_value(PARAM_TEXT, 'Author name', VALUE_OPTIONAL),
                 'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
                 'cover_image_url' => new external_value(PARAM_URL, 'Cover image URL', VALUE_OPTIONAL),
                 'file_url' => new external_value(PARAM_URL, 'File URL', VALUE_OPTIONAL),
                 'created_at' => new external_value(PARAM_INT, 'Creation timestamp'),
+                'class_ids' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'Class ID'),
+                    'Assigned class IDs',
+                    VALUE_OPTIONAL
+                ),
+                'category_ids' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'Category ID'),
+                    'Assigned category IDs',
+                    VALUE_OPTIONAL
+                ),
             ])
         );
     }

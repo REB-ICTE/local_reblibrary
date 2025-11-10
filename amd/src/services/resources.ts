@@ -42,21 +42,36 @@ export interface UpdateResourceData {
     file_url?: string;
 }
 
+export interface ResourceFilters {
+    searchQuery?: string;
+    levelId?: number;
+    sublevelId?: number;
+    classId?: number;
+    categoryId?: number;
+}
+
 /**
  * Resource service for CRUD operations.
  */
 export const ResourceService = {
     /**
-     * Get all resources.
+     * Get all resources with optional filters.
      *
+     * @param filters Optional filters for search and filtering
      * @returns Promise resolving to array of resources
      */
-    getAll: (): Promise<Resource[]> => {
+    getAll: (filters?: ResourceFilters): Promise<Resource[]> => {
         return new Promise((resolve, reject) => {
             require(['core/ajax'], (ajax: any) => {
                 ajax.call([{
                     methodname: 'local_reblibrary_get_all_resources',
-                    args: {}
+                    args: {
+                        search_query: filters?.searchQuery || '',
+                        level_id: filters?.levelId || 0,
+                        sublevel_id: filters?.sublevelId || 0,
+                        class_id: filters?.classId || 0,
+                        category_id: filters?.categoryId || 0,
+                    }
                 }])[0]
                     .then((data: Resource[]) => resolve(data))
                     .catch((error: any) => reject(error));

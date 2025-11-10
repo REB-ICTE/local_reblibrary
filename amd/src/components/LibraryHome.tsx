@@ -1,6 +1,7 @@
 import { h } from "preact";
 import { useState, useEffect, useMemo, useRef } from "preact/hooks";
 import type { Resource } from "../services/resources";
+import { ResourceService } from "../services/resources";
 import type { Category } from "../services/categories";
 import Sidebar from "./shared/Sidebar";
 import PDFReader from "./shared/PDFReader";
@@ -151,6 +152,7 @@ export default function LibraryHome({
 }: LibraryHomeProps) {
     const [resources, setResources] = useState<Resource[]>(initialResources);
     const [viewingResource, setViewingResource] = useState<Resource | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
 
     // Read search query from URL params
     const urlParams = new URLSearchParams(window.location.search);
@@ -161,6 +163,43 @@ export default function LibraryHome({
     const selectedSublevelId = urlParams.get('sublevel_id') ? parseInt(urlParams.get('sublevel_id')!) : null;
     const selectedClassId = urlParams.get('class_id') ? parseInt(urlParams.get('class_id')!) : null;
     const selectedCategoryId = urlParams.get('category_id') ? parseInt(urlParams.get('category_id')!) : null;
+
+    // Debounced search effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            // Only search if query has changed from initial or is being cleared
+            const performSearch = async () => {
+                setIsSearching(true);
+                try {
+                    const filteredResources = await ResourceService.getAll({
+                        searchQuery: searchQuery,
+                        levelId: selectedLevelId || undefined,
+                        sublevelId: selectedSublevelId || undefined,
+                        classId: selectedClassId || undefined,
+                        categoryId: selectedCategoryId || undefined,
+                    });
+                    setResources(filteredResources);
+
+                    // Update URL without reload (for shareable URLs)
+                    const url = new URL(window.location.href);
+                    if (searchQuery) {
+                        url.searchParams.set('q', searchQuery);
+                    } else {
+                        url.searchParams.delete('q');
+                    }
+                    window.history.replaceState({}, '', url);
+                } catch (error) {
+                    console.error('Search failed:', error);
+                } finally {
+                    setIsSearching(false);
+                }
+            };
+
+            performSearch();
+        }, 500); // 500ms debounce delay
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId]);
 
     // Menu items
     const libraryMenuItems = getLibraryMenuItems('home');
@@ -256,15 +295,9 @@ export default function LibraryHome({
         });
     };
 
-    // Handle search - navigate with new URL params
-    const handleSearch = (query: string) => {
-        navigateWithFilters({
-            level_id: selectedLevelId ? String(selectedLevelId) : null,
-            sublevel_id: selectedSublevelId ? String(selectedSublevelId) : null,
-            class_id: selectedClassId ? String(selectedClassId) : null,
-            category_id: selectedCategoryId ? String(selectedCategoryId) : null,
-            q: query || null
-        });
+    // Handle search - just update the search query state (debounce will handle the rest)
+    const handleSearchInput = (value: string) => {
+        setSearchQuery(value);
     };
 
     // Clear all filters
@@ -347,27 +380,20 @@ export default function LibraryHome({
                             {/* Search Bar */}
                             <div className="mb-3">
                                 <div className="library-search relative">
-                                    <i className="fa fa-search search-icon"></i>
+                                    <i className={`fa ${isSearching ? 'fa-spinner fa-spin' : 'fa-search'} search-icon`}></i>
                                     <input
                                         type="text"
                                         placeholder="Search books by title or author..."
                                         value={searchQuery}
-                                        onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleSearch(searchQuery);
-                                            }
-                                        }}
+                                        onInput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
                                         className="search-input"
-                                        style={{ paddingRight: '90px' }}
+                                        disabled={isSearching}
                                     />
-                                    <button
-                                        onClick={() => handleSearch(searchQuery)}
-                                        className="absolute right-2 top-1/2 px-3 py-1 bg-reb-blue text-white rounded hover:bg-blue-700 text-sm"
-                                        style={{ transform: 'translateY(-50%)' }}
-                                    >
-                                        Search
-                                    </button>
+                                    {isSearching && (
+                                        <span className="absolute right-4 top-1/2 text-sm text-gray-500" style={{ transform: 'translateY(-50%)' }}>
+                                            Searching...
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
