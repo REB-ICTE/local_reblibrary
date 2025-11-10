@@ -24,12 +24,13 @@
 import { h, render } from 'preact';
 import Categories from "./components/admin/Categories";
 import type { Category } from './services/categories';
+import type { EducationLevel, EducationSublevel, EducationClass } from './types';
 import './styles.css';
 
 /**
  * Initialize the Categories Preact application.
  *
- * Reads categories data from HTML data attributes,
+ * Reads categories and education structure data from HTML data attributes,
  * and renders the Categories component.
  *
  * @param {string} selector - CSS selector for the mount point
@@ -45,18 +46,30 @@ export const init = (selector: string = '#categories-root') => {
     // Read data from HTML data attributes
     try {
         const categoriesDataAttr = container.getAttribute('data-categories');
+        const levelsDataAttr = container.getAttribute('data-levels');
+        const sublevelsDataAttr = container.getAttribute('data-sublevels');
+        const classesDataAttr = container.getAttribute('data-classes');
 
         // Parse data
         const initialCategories: Category[] = categoriesDataAttr ? JSON.parse(categoriesDataAttr) : [];
+        const eduLevels: EducationLevel[] = levelsDataAttr ? JSON.parse(levelsDataAttr) : [];
+        const eduSublevels: EducationSublevel[] = sublevelsDataAttr ? JSON.parse(sublevelsDataAttr) : [];
+        const eduClasses: EducationClass[] = classesDataAttr ? JSON.parse(classesDataAttr) : [];
 
         console.log('Categories data loaded:', {
-            categories: initialCategories.length
+            categories: initialCategories.length,
+            levels: eduLevels.length,
+            sublevels: eduSublevels.length,
+            classes: eduClasses.length
         });
 
         // Render the Preact app
         render(
             h(Categories, {
-                initialCategories
+                initialCategories,
+                eduLevels,
+                eduSublevels,
+                eduClasses
             }),
             container
         );

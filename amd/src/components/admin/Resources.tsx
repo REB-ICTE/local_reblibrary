@@ -28,11 +28,20 @@ export const successSignal = signal<string | null>(null);
 interface ResourcesProps {
     initialResources: Resource[];
     initialAuthors: Author[];
+    eduLevels?: import('../../types').EducationLevel[];
+    eduSublevels?: import('../../types').EducationSublevel[];
+    eduClasses?: import('../../types').EducationClass[];
 }
 
 type Tab = 'resources' | 'authors';
 
-export default function Resources({ initialResources, initialAuthors }: ResourcesProps) {
+export default function Resources({
+    initialResources,
+    initialAuthors,
+    eduLevels = [],
+    eduSublevels = [],
+    eduClasses = []
+}: ResourcesProps) {
     // Initialize signals with data from PHP
     useEffect(() => {
         resourcesSignal.value = initialResources;
@@ -363,7 +372,13 @@ export default function Resources({ initialResources, initialAuthors }: Resource
 
     return (
         <div className="flex min-h-screen bg-white">
-            <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
+            <Sidebar
+                adminMenuItems={adminMenuItems}
+                libraryMenuItems={libraryMenuItems}
+                levels={eduLevels}
+                sublevels={eduSublevels}
+                classes={eduClasses}
+            />
             <main className="flex-1 overflow-y-auto bg-gray-50">
                 <div className="p-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-6">

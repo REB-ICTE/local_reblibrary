@@ -24,13 +24,13 @@
 import { h, render } from 'preact';
 import App from "./app";
 import { userSignal, statsSignal } from './store';
-import type { UserData, StatsData } from './types';
+import type { UserData, StatsData, EducationLevel, EducationSublevel, EducationClass } from './types';
 import './styles.css';
 
 /**
  * Initialize the REB Library Preact application.
  *
- * Reads user and stats data from HTML data attributes,
+ * Reads user, stats, and education structure data from HTML data attributes,
  * initializes Preact signals, and renders the app.
  *
  * @param {string} selector - CSS selector for the mount point
@@ -47,6 +47,9 @@ export const init = (selector: string = '#reb-library-root') => {
     try {
         const userDataAttr = container.getAttribute('data-user');
         const statsDataAttr = container.getAttribute('data-stats');
+        const levelsDataAttr = container.getAttribute('data-levels');
+        const sublevelsDataAttr = container.getAttribute('data-sublevels');
+        const classesDataAttr = container.getAttribute('data-classes');
 
         // Parse and initialize user signal
         if (userDataAttr) {
@@ -61,10 +64,21 @@ export const init = (selector: string = '#reb-library-root') => {
             statsSignal.value = statsData;
             console.log('Stats data loaded:', statsData);
         }
+
+        // Parse education structure data
+        const levels: EducationLevel[] = levelsDataAttr ? JSON.parse(levelsDataAttr) : [];
+        const sublevels: EducationSublevel[] = sublevelsDataAttr ? JSON.parse(sublevelsDataAttr) : [];
+        const classes: EducationClass[] = classesDataAttr ? JSON.parse(classesDataAttr) : [];
+
+        console.log('Education structure loaded:', {
+            levels: levels.length,
+            sublevels: sublevels.length,
+            classes: classes.length
+        });
+
+        // Render the Preact app with education structure data
+        render(h(App, { levels, sublevels, classes }), container);
     } catch (error) {
         console.error('Error parsing data attributes:', error);
     }
-
-    // Render the Preact app
-    render(h(App, null), container);
 };

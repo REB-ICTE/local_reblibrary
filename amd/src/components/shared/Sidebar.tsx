@@ -38,11 +38,6 @@ export default function Sidebar({
         localStorage.setItem(`sidebar_expanded_${key}`, String(value));
     };
 
-    // Resources menu item state (default expanded if on resources page)
-    const [resourcesExpanded, setResourcesExpanded] = useState(() =>
-        getStoredExpandedState('resources', libraryMenuItems[0]?.active || false)
-    );
-
     // Sublevel expand states (levels are always expanded)
     const [expandedSublevels, setExpandedSublevels] = useState<Set<string>>(() => {
         const expanded = new Set<string>();
@@ -58,12 +53,6 @@ export default function Sidebar({
     });
 
     // Toggle handlers
-    const toggleResources = () => {
-        const newState = !resourcesExpanded;
-        setResourcesExpanded(newState);
-        setStoredExpandedState('resources', newState);
-    };
-
     const toggleSublevel = (sublevelId: string) => {
         const newExpanded = new Set(expandedSublevels);
         if (newExpanded.has(sublevelId)) {
@@ -116,23 +105,29 @@ export default function Sidebar({
             {/* Library Menu Section */}
             <div className="mb-8">
                 <h6 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 pl-3">
-                    Library Menu
+                    Library
                 </h6>
                 <ul className="space-y-1 m-0 p-0">
                     {libraryMenuItems.map((item, index) => (
                         <li key={index}>
                             {index === 0 ? (
-                                // Resources menu with education structure tree
+                                // Resources menu with education structure tree (always expanded)
                                 <div>
-                                    <CollapsibleMenuItem
-                                        label={item.name}
-                                        icon={item.icon}
-                                        active={item.active && !urlParams.level_id && !urlParams.class_id}
-                                        isExpanded={resourcesExpanded}
-                                        onToggle={toggleResources}
-                                        level={0}
+                                    {/* Resources link - clickable, goes to home page without filters */}
+                                    <a
+                                        href="/local/reblibrary/index.php"
+                                        className={`flex items-center px-3 py-2 rounded text-sm font-medium transition-colors ${
+                                            item.active && !urlParams.level_id && !urlParams.sublevel_id && !urlParams.class_id
+                                                ? "bg-reb-blue text-white"
+                                                : "text-gray-700 hover:bg-gray-200"
+                                        }`}
                                     >
-                                        {/* Education Structure Tree */}
+                                        <i className={`${item.icon} w-5 mr-3`}></i>
+                                        <span>{item.name}</span>
+                                    </a>
+
+                                    {/* Education Structure Tree - always visible */}
+                                    <div className="mt-1">
                                         {levels.map(level => {
                                             const levelId = String(level.id);
                                             const levelSublevels = sublevelsByLevel.get(levelId) || [];
@@ -197,7 +192,7 @@ export default function Sidebar({
                                                 </div>
                                             );
                                         })}
-                                    </CollapsibleMenuItem>
+                                    </div>
                                 </div>
                             ) : (
                                 // Other library menu items (Browse, Search, etc.)
@@ -222,7 +217,7 @@ export default function Sidebar({
             {adminMenuItems.length > 0 && (
                 <div className="mb-8">
                     <h6 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 pl-3">
-                        Admin Menu
+                        Admin
                     </h6>
                     <ul className="space-y-1 m-0 p-0">
                         {adminMenuItems.map((item, index) => (

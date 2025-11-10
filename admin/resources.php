@@ -97,10 +97,47 @@ foreach ($authors as $author) {
     ];
 }
 
+// Get education structure for sidebar navigation.
+$levels = $DB->get_records('local_reblibrary_edu_levels', null, 'level_name ASC');
+$levelsdata = [];
+foreach ($levels as $level) {
+    $levelsdata[] = [
+        'id' => $level->id,
+        'level_name' => $level->level_name,
+    ];
+}
+
+$sublevels = $DB->get_records('local_reblibrary_edu_sublevels', null, 'sublevel_name ASC');
+$sublevelsdata = [];
+foreach ($sublevels as $sublevel) {
+    $sublevelsdata[] = [
+        'id' => $sublevel->id,
+        'sublevel_name' => $sublevel->sublevel_name,
+        'level_id' => $sublevel->level_id,
+    ];
+}
+
+$sql = "SELECT c.id, c.class_name, c.class_code, c.sublevel_id
+        FROM {local_reblibrary_classes} c
+        ORDER BY c.class_name";
+$classes = $DB->get_records_sql($sql);
+$classesdata = [];
+foreach ($classes as $class) {
+    $classesdata[] = [
+        'id' => $class->id,
+        'class_name' => $class->class_name,
+        'class_code' => $class->class_code,
+        'sublevel_id' => $class->sublevel_id,
+    ];
+}
+
 // Prepare data for template (only JSON-encoded data for Preact).
 $templatecontext = [
     'resources_json' => json_encode($resourcesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
     'authors_json' => json_encode($authorsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'levels_json' => json_encode($levelsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'sublevels_json' => json_encode($sublevelsdata, JSON_HEX_QUOT | JSON_HEX_APOS),
+    'classes_json' => json_encode($classesdata, JSON_HEX_QUOT | JSON_HEX_APOS),
 ];
 
 // Output the page.

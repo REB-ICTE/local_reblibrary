@@ -16,9 +16,17 @@ export const successSignal = signal<string | null>(null);
 
 interface CategoriesProps {
     initialCategories: Category[];
+    eduLevels?: import('../../types').EducationLevel[];
+    eduSublevels?: import('../../types').EducationSublevel[];
+    eduClasses?: import('../../types').EducationClass[];
 }
 
-export default function Categories({ initialCategories }: CategoriesProps) {
+export default function Categories({
+    initialCategories,
+    eduLevels = [],
+    eduSublevels = [],
+    eduClasses = []
+}: CategoriesProps) {
     // Initialize signals with data from PHP
     useEffect(() => {
         categoriesSignal.value = initialCategories;
@@ -119,7 +127,13 @@ export default function Categories({ initialCategories }: CategoriesProps) {
 
     return (
         <div className="flex min-h-screen bg-white">
-            <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
+            <Sidebar
+                adminMenuItems={adminMenuItems}
+                libraryMenuItems={libraryMenuItems}
+                levels={eduLevels}
+                sublevels={eduSublevels}
+                classes={eduClasses}
+            />
             <main className="flex-1 overflow-y-auto bg-gray-50">
                 <div className="p-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-6">

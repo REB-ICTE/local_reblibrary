@@ -25,12 +25,13 @@ import { h, render } from 'preact';
 import Resources from "./components/admin/Resources";
 import type { Resource } from './services/resources';
 import type { Author } from './services/authors';
+import type { EducationLevel, EducationSublevel, EducationClass } from './types';
 import './styles.css';
 
 /**
  * Initialize the Resources Preact application.
  *
- * Reads resources and authors data from HTML data attributes,
+ * Reads resources, authors, and education structure data from HTML data attributes,
  * and renders the Resources component.
  *
  * @param {string} selector - CSS selector for the mount point
@@ -47,21 +48,33 @@ export const init = (selector: string = '#resources-root') => {
     try {
         const resourcesDataAttr = container.getAttribute('data-resources');
         const authorsDataAttr = container.getAttribute('data-authors');
+        const levelsDataAttr = container.getAttribute('data-levels');
+        const sublevelsDataAttr = container.getAttribute('data-sublevels');
+        const classesDataAttr = container.getAttribute('data-classes');
 
         // Parse data
         const initialResources: Resource[] = resourcesDataAttr ? JSON.parse(resourcesDataAttr) : [];
         const initialAuthors: Author[] = authorsDataAttr ? JSON.parse(authorsDataAttr) : [];
+        const eduLevels: EducationLevel[] = levelsDataAttr ? JSON.parse(levelsDataAttr) : [];
+        const eduSublevels: EducationSublevel[] = sublevelsDataAttr ? JSON.parse(sublevelsDataAttr) : [];
+        const eduClasses: EducationClass[] = classesDataAttr ? JSON.parse(classesDataAttr) : [];
 
         console.log('Resources data loaded:', {
             resources: initialResources.length,
-            authors: initialAuthors.length
+            authors: initialAuthors.length,
+            levels: eduLevels.length,
+            sublevels: eduSublevels.length,
+            classes: eduClasses.length
         });
 
         // Render the Preact app
         render(
             h(Resources, {
                 initialResources,
-                initialAuthors
+                initialAuthors,
+                eduLevels,
+                eduSublevels,
+                eduClasses
             }),
             container
         );
