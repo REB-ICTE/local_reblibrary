@@ -153,6 +153,7 @@ export default function LibraryHome({
     const [resources, setResources] = useState<Resource[]>(initialResources);
     const [viewingResource, setViewingResource] = useState<Resource | null>(null);
     const [isSearching, setIsSearching] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Read search query from URL params
     const urlParams = new URLSearchParams(window.location.search);
@@ -167,7 +168,6 @@ export default function LibraryHome({
     // Debounced search effect
     useEffect(() => {
         const timer = setTimeout(() => {
-            // Only search if query has changed from initial or is being cleared
             const performSearch = async () => {
                 setIsSearching(true);
                 try {
@@ -200,6 +200,14 @@ export default function LibraryHome({
 
         return () => clearTimeout(timer);
     }, [searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId]);
+
+    // Restore focus after search completes
+    useEffect(() => {
+        if (!isSearching && searchInputRef.current && document.activeElement !== searchInputRef.current) {
+            // Only restore if we just finished searching
+            searchInputRef.current.focus();
+        }
+    }, [isSearching]);
 
     // Menu items
     const libraryMenuItems = getLibraryMenuItems('home');
@@ -382,12 +390,12 @@ export default function LibraryHome({
                                 <div className="library-search relative">
                                     <i className={`fa ${isSearching ? 'fa-spinner fa-spin' : 'fa-search'} search-icon`}></i>
                                     <input
+                                        ref={searchInputRef}
                                         type="text"
                                         placeholder="Search books by title or author..."
                                         value={searchQuery}
                                         onInput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
                                         className="search-input"
-                                        disabled={isSearching}
                                     />
                                     {isSearching && (
                                         <span className="absolute right-4 top-1/2 text-sm text-gray-500" style={{ transform: 'translateY(-50%)' }}>
