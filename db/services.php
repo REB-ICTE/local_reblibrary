@@ -325,12 +325,12 @@ $functions = [
         'capabilities' => 'local/reblibrary:manageresources',
     ],
 
-    // MinIO upload web services.
+    // S3 upload web services.
     'local_reblibrary_upload_resource_file' => [
         'classname' => 'local_reblibrary\external\upload_resource_file',
         'methodname' => 'execute',
         'classpath' => '',
-        'description' => 'Upload resource file (PDF + cover) to MinIO through backend',
+        'description' => 'Upload resource file (PDF + cover) to S3-compatible storage',
         'type' => 'write',
         'ajax' => true,
         'capabilities' => 'local/reblibrary:manageresources',

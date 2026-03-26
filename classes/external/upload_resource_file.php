@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * External API for uploading resource files to MinIO.
+ * External API for uploading resource files to S3.
  *
  * @package    local_reblibrary
  * @copyright  2025 Rwanda Education Board
@@ -33,7 +33,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 use context_system;
-use local_reblibrary\minio_client;
+use local_reblibrary\s3_client;
 
 /**
  * External API for uploading resource files through backend.
@@ -54,9 +54,9 @@ class upload_resource_file extends external_api {
     }
 
     /**
-     * Upload PDF and cover image to MinIO through backend.
+     * Upload PDF and cover image to S3 through backend.
      *
-     * Accepts base64-encoded file content, decodes it, and uploads to MinIO.
+     * Accepts base64-encoded file content, decodes it, and uploads to S3.
      * Uses content-addressed storage for PDFs (by hash).
      *
      * @param string $pdfhash SHA-256 hash of PDF file
@@ -88,7 +88,7 @@ class upload_resource_file extends external_api {
         }
 
         try {
-            $minio = new minio_client();
+            $s3 = new s3_client();
 
             // Decode base64 content.
             $pdfdata = base64_decode($params['pdf_content'], true);
@@ -123,11 +123,11 @@ class upload_resource_file extends external_api {
             $pdfkey = 'resources/' . $params['pdf_hash'] . '/file.pdf';
 
             // Check if PDF already exists.
-            $pdfexists = $minio->object_exists($pdfkey);
+            $pdfexists = $s3->object_exists($pdfkey);
 
             // Upload PDF only if it doesn't exist (deduplication).
             if (!$pdfexists) {
-                self::upload_to_minio($minio, $pdfkey, $pdfdata, 'application/pdf');
+                self::upload_to_minio($s3, $pdfkey, $pdfdata, 'application/pdf');
             }
 
             // Cover path: unique per upload (UUID v4).
@@ -135,7 +135,7 @@ class upload_resource_file extends external_api {
             $coverkey = 'resources/' . $params['pdf_hash'] . '/covers/' . $coveruuid . '.jpg';
 
             // Upload cover image.
-            self::upload_to_minio($minio, $coverkey, $coverdata, 'image/jpeg');
+            self::upload_to_minio($s3, $coverkey, $coverdata, 'image/jpeg');
 
             // Generate proxy URLs (internal references).
             // Format: /local/reblibrary/download.php?key={key}
@@ -165,18 +165,18 @@ class upload_resource_file extends external_api {
     }
 
     /**
-     * Upload file data to MinIO.
+     * Upload file data to S3.
      *
-     * @param minio_client $minio MinIO client instance
+     * @param s3_client $s3 S3 client instance
      * @param string $key Object key/path
      * @param string $data File content (binary)
      * @param string $contenttype MIME type
      * @return void
      * @throws \Exception If upload fails
      */
-    private static function upload_to_minio($minio, $key, $data, $contenttype) {
+    private static function upload_to_minio($s3, $key, $data, $contenttype) {
         // Write to temporary file.
-        $tempfile = tempnam(sys_get_temp_dir(), 'minio_upload_');
+        $tempfile = tempnam(sys_get_temp_dir(), 's3_upload_');
         if ($tempfile === false) {
             throw new \Exception('Failed to create temporary file');
         }
@@ -188,10 +188,10 @@ class upload_resource_file extends external_api {
                 throw new \Exception('Failed to write to temporary file');
             }
 
-            // Upload to MinIO using AWS SDK.
-            $client = self::get_s3_client($minio);
+            // Upload to S3 using AWS SDK.
+            $client = self::get_s3_client($s3);
             $result = $client->putObject([
-                'Bucket' => $minio->get_bucket(),
+                'Bucket' => $s3->get_bucket(),
                 'Key' => $key,
                 'SourceFile' => $tempfile,
                 'ContentType' => $contenttype,
@@ -200,7 +200,7 @@ class upload_resource_file extends external_api {
 
             // Verify upload succeeded.
             if (!isset($result['ObjectURL'])) {
-                throw new \Exception('MinIO upload returned no ObjectURL');
+                throw new \Exception('S3 upload returned no ObjectURL');
             }
 
         } finally {
@@ -212,17 +212,17 @@ class upload_resource_file extends external_api {
     }
 
     /**
-     * Get S3 client from MinIO client instance.
+     * Get S3 client from S3 client instance.
      *
-     * @param minio_client $minio MinIO client instance
+     * @param s3_client $s3 S3 client instance
      * @return \Aws\S3\S3Client
      */
-    private static function get_s3_client($minio) {
+    private static function get_s3_client($s3) {
         // Use reflection to access private s3client property.
-        $reflection = new \ReflectionClass($minio);
+        $reflection = new \ReflectionClass($s3);
         $property = $reflection->getProperty('s3client');
         $property->setAccessible(true);
-        return $property->getValue($minio);
+        return $property->getValue($s3);
     }
 
     /**
@@ -235,9 +235,9 @@ class upload_resource_file extends external_api {
             'success' => new external_value(PARAM_BOOL, 'Upload success status'),
             'pdf_hash' => new external_value(PARAM_ALPHANUM, 'SHA-256 hash of PDF'),
             'pdf_exists' => new external_value(PARAM_BOOL, 'Whether PDF already existed in storage'),
-            'pdf_key' => new external_value(PARAM_TEXT, 'MinIO object key for PDF'),
+            'pdf_key' => new external_value(PARAM_TEXT, 'S3 object key for PDF'),
             'pdf_url' => new external_value(PARAM_URL, 'Proxy URL for accessing PDF'),
-            'cover_key' => new external_value(PARAM_TEXT, 'MinIO object key for cover image'),
+            'cover_key' => new external_value(PARAM_TEXT, 'S3 object key for cover image'),
             'cover_url' => new external_value(PARAM_URL, 'Proxy URL for accessing cover image'),
             'pdf_size' => new external_value(PARAM_INT, 'PDF file size in bytes'),
             'cover_size' => new external_value(PARAM_INT, 'Cover image size in bytes'),

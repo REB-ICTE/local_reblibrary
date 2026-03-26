@@ -17,7 +17,7 @@
 /**
  * File download proxy for REB Library resources.
  *
- * Streams files from MinIO storage to browser with proper headers.
+ * Streams files from S3 storage to browser with proper headers.
  * Supports HTTP range requests for PDF streaming.
  *
  * @package    local_reblibrary
@@ -25,10 +25,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../../config.php');
-require_once($CFG->dirroot . '/local/reblibrary/classes/minio_client.php');
+require_once('../../config.php');
 
-use local_reblibrary\minio_client;
+use local_reblibrary\s3_client;
 
 // Require login and check capability.
 require_login();
@@ -41,28 +40,27 @@ $key = required_param('key', PARAM_TEXT);
 
 // Validate key format (must start with 'resources/').
 if (strpos($key, 'resources/') !== 0) {
-    print_error('invalidfilekey', 'local_reblibrary');
+    throw new moodle_exception('invalidfilekey', 'local_reblibrary');
 }
 
 try {
-    // Initialize MinIO client.
-    $minio = new minio_client();
+    $s3 = new s3_client();
 
-    // Get S3 client using reflection (access private property).
-    $reflection = new ReflectionClass($minio);
+    // Get S3 client using reflection.
+    $reflection = new ReflectionClass($s3);
     $property = $reflection->getProperty('s3client');
     $property->setAccessible(true);
-    $s3client = $property->getValue($minio);
+    $s3client = $property->getValue($s3);
 
     // Get object metadata.
     try {
         $result = $s3client->headObject([
-            'Bucket' => $minio->get_bucket(),
+            'Bucket' => $s3->get_bucket(),
             'Key' => $key,
         ]);
     } catch (Aws\S3\Exception\S3Exception $e) {
         if ($e->getStatusCode() === 404) {
-            print_error('filenotfound', 'local_reblibrary');
+            throw new moodle_exception('filenotfound', 'local_reblibrary');
         }
         throw $e;
     }
@@ -70,24 +68,20 @@ try {
     $contentlength = $result['ContentLength'];
     $contenttype = $result['ContentType'];
     $etag = $result['ETag'];
-
-    // Determine filename from key.
     $filename = basename($key);
 
-    // Check for Range header (HTTP range request).
+    // Check for Range header.
     $rangeheader = isset($_SERVER['HTTP_RANGE']) ? $_SERVER['HTTP_RANGE'] : null;
     $rangestart = 0;
     $rangeend = $contentlength - 1;
     $ispartial = false;
 
     if ($rangeheader) {
-        // Parse Range header (e.g., "bytes=0-1023").
         if (preg_match('/bytes=(\d+)-(\d*)/', $rangeheader, $matches)) {
             $rangestart = intval($matches[1]);
             $rangeend = !empty($matches[2]) ? intval($matches[2]) : $contentlength - 1;
             $ispartial = true;
 
-            // Validate range.
             if ($rangestart > $rangeend || $rangestart >= $contentlength) {
                 header('HTTP/1.1 416 Requested Range Not Satisfiable');
                 header('Content-Range: bytes */' . $contentlength);
@@ -96,7 +90,6 @@ try {
         }
     }
 
-    // Set appropriate HTTP status code.
     if ($ispartial) {
         header('HTTP/1.1 206 Partial Content');
         header('Content-Range: bytes ' . $rangestart . '-' . $rangeend . '/' . $contentlength);
@@ -106,40 +99,33 @@ try {
         $outputlength = $contentlength;
     }
 
-    // Set headers.
     header('Content-Type: ' . $contenttype);
     header('Content-Length: ' . $outputlength);
     header('Accept-Ranges: bytes');
     header('ETag: ' . $etag);
-    header('Cache-Control: public, max-age=31536000'); // Cache for 1 year.
+    header('Cache-Control: public, max-age=31536000');
 
-    // For PDF files, display inline. For images, also inline.
     if ($contenttype === 'application/pdf' || strpos($contenttype, 'image/') === 0) {
         header('Content-Disposition: inline; filename="' . $filename . '"');
     } else {
         header('Content-Disposition: attachment; filename="' . $filename . '"');
     }
 
-    // Stream file from MinIO.
     $getoptions = [
-        'Bucket' => $minio->get_bucket(),
+        'Bucket' => $s3->get_bucket(),
         'Key' => $key,
     ];
 
-    // Add Range if partial content.
     if ($ispartial) {
         $getoptions['Range'] = 'bytes=' . $rangestart . '-' . $rangeend;
     }
 
     $object = $s3client->getObject($getoptions);
-
-    // Stream body to output.
     $body = $object['Body'];
 
-    // For large files, stream in chunks.
     if ($body->isSeekable()) {
         while (!$body->eof()) {
-            echo $body->read(8192); // 8KB chunks.
+            echo $body->read(8192);
             flush();
         }
     } else {
@@ -149,6 +135,6 @@ try {
     exit;
 
 } catch (Exception $e) {
-    debugging('MinIO download error: ' . $e->getMessage(), DEBUG_DEVELOPER);
-    print_error('downloaderror', 'local_reblibrary');
+    debugging('S3 download error: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    throw new moodle_exception('downloaderror', 'local_reblibrary');
 }

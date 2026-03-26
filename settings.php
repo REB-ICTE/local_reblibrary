@@ -31,57 +31,57 @@ if ($hassiteconfig) {
     // Add this page to the admin menu.
     $ADMIN->add('localplugins', $settings);
 
-    // MinIO S3 Storage Settings.
+    // S3 Storage Settings.
     $settings->add(new admin_setting_heading(
-        'local_reblibrary/minioheading',
-        get_string('miniosettings', 'local_reblibrary'),
-        get_string('miniosettings_desc', 'local_reblibrary')
+        'local_reblibrary/s3heading',
+        get_string('s3settings', 'local_reblibrary'),
+        get_string('s3settings_desc', 'local_reblibrary')
     ));
 
     $settings->add(new admin_setting_configtext(
-        'local_reblibrary/minio_endpoint',
-        get_string('minioendpoint', 'local_reblibrary'),
-        get_string('minioendpoint_desc', 'local_reblibrary'),
-        'http://minio:9000',
+        'local_reblibrary/s3_endpoint',
+        get_string('s3endpoint', 'local_reblibrary'),
+        get_string('s3endpoint_desc', 'local_reblibrary'),
+        'http://garage:3900',
         PARAM_URL
     ));
 
     $settings->add(new admin_setting_configtext(
-        'local_reblibrary/minio_public_endpoint',
-        get_string('miniopublicendpoint', 'local_reblibrary'),
-        get_string('miniopublicendpoint_desc', 'local_reblibrary'),
-        'http://localhost:9000',
+        'local_reblibrary/s3_public_endpoint',
+        get_string('s3publicendpoint', 'local_reblibrary'),
+        get_string('s3publicendpoint_desc', 'local_reblibrary'),
+        'http://localhost:3900',
         PARAM_URL
     ));
 
     $settings->add(new admin_setting_configtext(
-        'local_reblibrary/minio_access_key',
-        get_string('minioaccesskey', 'local_reblibrary'),
-        get_string('minioaccesskey_desc', 'local_reblibrary'),
-        'minioadmin',
+        'local_reblibrary/s3_access_key',
+        get_string('s3accesskey', 'local_reblibrary'),
+        get_string('s3accesskey_desc', 'local_reblibrary'),
+        '',
         PARAM_TEXT
     ));
 
     $settings->add(new admin_setting_configpasswordunmask(
-        'local_reblibrary/minio_secret_key',
-        get_string('miniosecretkey', 'local_reblibrary'),
-        get_string('miniosecretkey_desc', 'local_reblibrary'),
-        'minioadmin'
+        'local_reblibrary/s3_secret_key',
+        get_string('s3secretkey', 'local_reblibrary'),
+        get_string('s3secretkey_desc', 'local_reblibrary'),
+        ''
     ));
 
     $settings->add(new admin_setting_configtext(
-        'local_reblibrary/minio_bucket',
-        get_string('miniobucket', 'local_reblibrary'),
-        get_string('miniobucket_desc', 'local_reblibrary'),
+        'local_reblibrary/s3_bucket',
+        get_string('s3bucket', 'local_reblibrary'),
+        get_string('s3bucket_desc', 'local_reblibrary'),
         'moodle',
         PARAM_TEXT
     ));
 
     $settings->add(new admin_setting_configtext(
-        'local_reblibrary/minio_region',
-        get_string('minioregion', 'local_reblibrary'),
-        get_string('minioregion_desc', 'local_reblibrary'),
-        'us-east-1',
+        'local_reblibrary/s3_region',
+        get_string('s3region', 'local_reblibrary'),
+        get_string('s3region_desc', 'local_reblibrary'),
+        'rw-central-1',
         PARAM_TEXT
     ));
 
