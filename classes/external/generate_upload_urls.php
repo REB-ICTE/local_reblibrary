@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * External API for generating MinIO upload URLs.
+ * External API for generating S3 upload URLs.
  *
  * @package    local_reblibrary
  * @copyright  2025 Rwanda Education Board
@@ -33,7 +33,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 use context_system;
-use local_reblibrary\minio_client;
+use local_reblibrary\s3_client;
 
 /**
  * External API for generating presigned upload URLs.
@@ -59,7 +59,7 @@ class generate_upload_urls extends external_api {
      *
      * @param string $pdfhash SHA-256 hash of PDF file
      * @return array Upload URLs and metadata
-     * @throws \moodle_exception If validation fails or MinIO error occurs
+     * @throws \moodle_exception If validation fails or S3 error occurs
      */
     public static function execute($pdfhash) {
         global $CFG;
@@ -82,13 +82,13 @@ class generate_upload_urls extends external_api {
         }
 
         try {
-            $minio = new minio_client();
+            $s3 = new s3_client();
 
             // PDF path: content-addressed by hash.
             $pdfkey = 'resources/' . $params['pdf_hash'] . '/file.pdf';
 
             // Check if PDF already exists.
-            $pdfexists = $minio->object_exists($pdfkey);
+            $pdfexists = $s3->object_exists($pdfkey);
 
             // Cover path: unique per resource (UUID v4).
             $coveruuid = self::generate_uuid_v4();
@@ -100,15 +100,15 @@ class generate_upload_urls extends external_api {
             $result = [
                 'pdf_hash' => $params['pdf_hash'],
                 'pdf_exists' => $pdfexists,
-                'pdf_public_url' => $minio->get_public_url($pdfkey),
-                'cover_upload_url' => $minio->get_presigned_put_url($coverkey, $expiration, 'image/jpeg'),
-                'cover_public_url' => $minio->get_public_url($coverkey),
+                'pdf_public_url' => (new \moodle_url('/local/reblibrary/download.php', ['key' => $pdfkey]))->out(false),
+                'cover_upload_url' => $s3->get_presigned_put_url($coverkey, $expiration, 'image/jpeg'),
+                'cover_public_url' => (new \moodle_url('/local/reblibrary/download.php', ['key' => $coverkey]))->out(false),
                 'expires_in' => $expiration,
             ];
 
             // Only generate PDF upload URL if it doesn't exist.
             if (!$pdfexists) {
-                $result['pdf_upload_url'] = $minio->get_presigned_put_url($pdfkey, $expiration, 'application/pdf');
+                $result['pdf_upload_url'] = $s3->get_presigned_put_url($pdfkey, $expiration, 'application/pdf');
             }
 
             return $result;
@@ -118,7 +118,7 @@ class generate_upload_urls extends external_api {
             throw $e;
         } catch (\Exception $e) {
             // Wrap other exceptions.
-            throw new \moodle_exception('miniouploaderror', 'local_reblibrary', '', null, $e->getMessage());
+            throw new \moodle_exception('s3uploaderror', 'local_reblibrary', '', null, $e->getMessage());
         }
     }
 

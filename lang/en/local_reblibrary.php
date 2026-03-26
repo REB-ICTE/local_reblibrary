@@ -177,27 +177,27 @@ $string['no_authors'] = 'No authors found. Click "Add Author" to create one.';
 $string['loading'] = 'Loading...';
 $string['search_placeholder'] = 'Search...';
 
-// MinIO S3 Storage settings.
-$string['miniosettings'] = 'MinIO S3 Storage';
-$string['miniosettings_desc'] = 'Configure MinIO S3-compatible object storage for resource files';
-$string['minioendpoint'] = 'MinIO Endpoint (Internal)';
-$string['minioendpoint_desc'] = 'MinIO server endpoint URL for server-side operations (e.g., http://minio:9000)';
-$string['miniopublicendpoint'] = 'MinIO Public Endpoint';
-$string['miniopublicendpoint_desc'] = 'MinIO endpoint URL accessible from browsers (e.g., http://localhost:9000)';
-$string['minioaccesskey'] = 'Access Key';
-$string['minioaccesskey_desc'] = 'MinIO access key (username)';
-$string['miniosecretkey'] = 'Secret Key';
-$string['miniosecretkey_desc'] = 'MinIO secret key (password)';
-$string['miniobucket'] = 'Bucket Name';
-$string['miniobucket_desc'] = 'MinIO bucket name for storing resource files';
-$string['minioregion'] = 'Region';
-$string['minioregion_desc'] = 'MinIO region (default: us-east-1)';
+// S3 Storage settings.
+$string['s3settings'] = 'S3 Object Storage';
+$string['s3settings_desc'] = 'Configure S3-compatible object storage for resource files';
+$string['s3endpoint'] = 'S3 Endpoint (Internal)';
+$string['s3endpoint_desc'] = 'S3 server endpoint URL for server-side operations (e.g., http://garage:3900)';
+$string['s3publicendpoint'] = 'S3 Public Endpoint';
+$string['s3publicendpoint_desc'] = 'S3 endpoint URL accessible from browsers (e.g., http://localhost:3900)';
+$string['s3accesskey'] = 'Access Key';
+$string['s3accesskey_desc'] = 'S3 access key';
+$string['s3secretkey'] = 'Secret Key';
+$string['s3secretkey_desc'] = 'S3 secret key';
+$string['s3bucket'] = 'Bucket Name';
+$string['s3bucket_desc'] = 'S3 bucket name for storing resource files';
+$string['s3region'] = 'Region';
+$string['s3region_desc'] = 'S3 region (default: us-east-1)';
 
-// MinIO errors.
-$string['minioconfigmissing'] = 'MinIO configuration is missing. Please configure MinIO settings.';
-$string['minioconnectionfailed'] = 'Failed to connect to MinIO';
-$string['minioconnectionok'] = 'MinIO connection successful';
-$string['miniopresignedfailed'] = 'Failed to generate presigned URL';
-$string['minioaclfailed'] = 'Failed to set object ACL';
-$string['miniodeletefailed'] = 'Failed to delete object from MinIO';
-$string['miniouploaderror'] = 'MinIO upload error';
+// S3 errors.
+$string['s3configmissing'] = 'S3 configuration is missing. Please configure S3 storage settings.';
+$string['s3connectionfailed'] = 'Failed to connect to S3 storage';
+$string['s3connectionok'] = 'S3 connection successful';
+$string['s3presignedfailed'] = 'Failed to generate presigned URL';
+$string['s3aclfailed'] = 'Failed to set object ACL';
+$string['s3deletefailed'] = 'Failed to delete object from S3 storage';
+$string['s3uploaderror'] = 'S3 upload error';

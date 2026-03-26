@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * MinIO S3 client service for REB Library.
+ * S3 client service for REB Library.
  *
  * @package    local_reblibrary
  * @copyright  2025 Rwanda Education Board
@@ -32,11 +32,11 @@ use Aws\S3\S3Client;
 use Aws\Exception\AwsException;
 
 /**
- * MinIO client wrapper class.
+ * S3 client wrapper class.
  *
- * Provides methods to interact with MinIO S3-compatible object storage.
+ * Provides methods to interact with S3-compatible object storage.
  */
-class minio_client {
+class s3_client {
 
     /** @var S3Client AWS S3 client instance for server operations */
     private $s3client;
@@ -44,13 +44,13 @@ class minio_client {
     /** @var S3Client AWS S3 client instance for presigned URLs */
     private $publicclient;
 
-    /** @var string MinIO bucket name */
+    /** @var string S3 bucket name */
     private $bucket;
 
-    /** @var string MinIO endpoint URL (internal) */
+    /** @var string S3 endpoint URL (internal) */
     private $endpoint;
 
-    /** @var string MinIO public endpoint URL (browser-accessible) */
+    /** @var string S3 public endpoint URL (browser-accessible) */
     private $publicendpoint;
 
     /** @var string Access key */
@@ -63,20 +63,20 @@ class minio_client {
     private $region;
 
     /**
-     * Constructor - initializes S3 client with MinIO configuration.
+     * Constructor - initializes S3 client with configuration.
      *
      * @throws \moodle_exception If configuration is invalid
      */
     public function __construct() {
         global $CFG;
 
-        // Get MinIO configuration from plugin settings.
-        $this->endpoint = get_config('local_reblibrary', 'minio_endpoint');
-        $this->publicendpoint = get_config('local_reblibrary', 'minio_public_endpoint');
-        $this->accesskey = get_config('local_reblibrary', 'minio_access_key');
-        $this->secretkey = get_config('local_reblibrary', 'minio_secret_key');
-        $this->bucket = get_config('local_reblibrary', 'minio_bucket');
-        $this->region = get_config('local_reblibrary', 'minio_region') ?: 'us-east-1';
+        // Get S3 configuration from plugin settings.
+        $this->endpoint = get_config('local_reblibrary', 's3_endpoint');
+        $this->publicendpoint = get_config('local_reblibrary', 's3_public_endpoint');
+        $this->accesskey = get_config('local_reblibrary', 's3_access_key');
+        $this->secretkey = get_config('local_reblibrary', 's3_secret_key');
+        $this->bucket = get_config('local_reblibrary', 's3_bucket');
+        $this->region = get_config('local_reblibrary', 's3_region') ?: 'us-east-1';
 
         // If public endpoint not set, use internal endpoint.
         if (empty($this->publicendpoint)) {
@@ -85,14 +85,14 @@ class minio_client {
 
         // Validate configuration.
         if (empty($this->endpoint) || empty($this->accesskey) || empty($this->secretkey) || empty($this->bucket)) {
-            throw new \moodle_exception('minioconfigmissing', 'local_reblibrary');
+            throw new \moodle_exception('s3configmissing', 'local_reblibrary');
         }
 
         // Initialize S3 client for server-side operations.
         try {
             $this->s3client = $this->create_client($this->endpoint);
         } catch (\Exception $e) {
-            throw new \moodle_exception('minioconnectionfailed', 'local_reblibrary', '', null, $e->getMessage());
+            throw new \moodle_exception('s3connectionfailed', 'local_reblibrary', '', null, $e->getMessage());
         }
     }
 
@@ -107,7 +107,7 @@ class minio_client {
             'version' => 'latest',
             'region' => $this->region,
             'endpoint' => $endpoint,
-            'use_path_style_endpoint' => true, // Required for MinIO.
+            'use_path_style_endpoint' => true, // Required for S3-compatible services.
             'credentials' => [
                 'key' => $this->accesskey,
                 'secret' => $this->secretkey,
@@ -133,7 +133,7 @@ class minio_client {
     }
 
     /**
-     * Check if an object exists in MinIO.
+     * Check if an object exists in S3.
      *
      * @param string $key Object key/path
      * @return bool True if object exists
@@ -151,7 +151,7 @@ class minio_client {
                 return false;
             }
             // Other errors should be logged.
-            debugging('MinIO headObject error: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            debugging('S3 headObject error: ' . $e->getMessage(), DEBUG_DEVELOPER);
             return false;
         }
     }
@@ -179,7 +179,7 @@ class minio_client {
             $request = $client->createPresignedRequest($cmd, "+{$expiration} seconds");
             return (string) $request->getUri();
         } catch (AwsException $e) {
-            throw new \moodle_exception('miniopresignedfailed', 'local_reblibrary', '', null, $e->getMessage());
+            throw new \moodle_exception('s3presignedfailed', 'local_reblibrary', '', null, $e->getMessage());
         }
     }
 
@@ -217,7 +217,7 @@ class minio_client {
             $request = $client->createPresignedRequest($cmd, "+{$expiration} seconds");
             return (string) $request->getUri();
         } catch (AwsException $e) {
-            throw new \moodle_exception('miniopresignedfailed', 'local_reblibrary', '', null, $e->getMessage());
+            throw new \moodle_exception('s3presignedfailed', 'local_reblibrary', '', null, $e->getMessage());
         }
     }
 
@@ -237,12 +237,12 @@ class minio_client {
             ]);
             return true;
         } catch (AwsException $e) {
-            throw new \moodle_exception('minioaclfailed', 'local_reblibrary', '', null, $e->getMessage());
+            throw new \moodle_exception('s3aclfailed', 'local_reblibrary', '', null, $e->getMessage());
         }
     }
 
     /**
-     * Delete an object from MinIO.
+     * Delete an object from S3.
      *
      * @param string $key Object key/path
      * @return bool True on success
@@ -256,12 +256,12 @@ class minio_client {
             ]);
             return true;
         } catch (AwsException $e) {
-            throw new \moodle_exception('miniodeletefailed', 'local_reblibrary', '', null, $e->getMessage());
+            throw new \moodle_exception('s3deletefailed', 'local_reblibrary', '', null, $e->getMessage());
         }
     }
 
     /**
-     * Test MinIO connection.
+     * Test S3 connection.
      *
      * @return array Result with 'success' boolean and optional 'message'
      */
@@ -275,12 +275,12 @@ class minio_client {
 
             return [
                 'success' => true,
-                'message' => get_string('minioconnectionok', 'local_reblibrary'),
+                'message' => get_string('s3connectionok', 'local_reblibrary'),
             ];
         } catch (AwsException $e) {
             return [
                 'success' => false,
-                'message' => get_string('minioconnectionfailed', 'local_reblibrary') . ': ' . $e->getMessage(),
+                'message' => get_string('s3connectionfailed', 'local_reblibrary') . ': ' . $e->getMessage(),
             ];
         }
     }

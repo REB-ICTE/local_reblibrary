@@ -325,12 +325,12 @@ $functions = [
         'capabilities' => 'local/reblibrary:manageresources',
     ],
 
-    // MinIO upload web services.
+    // S3 upload web services.
     'local_reblibrary_generate_upload_urls' => [
         'classname' => 'local_reblibrary\external\generate_upload_urls',
         'methodname' => 'execute',
         'classpath' => '',
-        'description' => 'Generate presigned upload URLs for MinIO S3 storage',
+        'description' => 'Generate presigned upload URLs for S3-compatible storage',
         'type' => 'read',
         'ajax' => true,
         'capabilities' => 'local/reblibrary:manageresources',

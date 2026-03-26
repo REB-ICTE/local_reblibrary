@@ -28,4 +28,4 @@ $plugin->component = 'local_reblibrary';
 $plugin->version = 2025102500;           // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires = 2025041400;          // Requires Moodle 5.0 (Build: 20250414).
 $plugin->maturity = MATURITY_STABLE;     // Code maturity level.
-$plugin->release = '1.4.0';              // Human-readable version name (MinIO upload feature).
+$plugin->release = '1.4.1';              // Human-readable version name (S3 storage).
