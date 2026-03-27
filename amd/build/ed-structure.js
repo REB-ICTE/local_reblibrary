@@ -1,4 +1,4 @@
-define(["exports","./assets/styles-WeNcp7yL","./assets/signals.module-CKl1xHmO","./assets/Toast-DxXtVt-M"],(function(L,e,y,E){"use strict";/**
+define(["exports","./assets/styles-DyHucfQy","./assets/signals.module-CcOdGbSl","./assets/Toast-fG66R2OK"],(function(L,e,y,E){"use strict";/**
  * Education structure web service client.
  * Provides methods to interact with local_reblibrary education structure web services.
  *

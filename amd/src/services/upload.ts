@@ -1,6 +1,6 @@
 /**
- * Upload service for MinIO S3 storage.
- * Handles PDF hashing, upload URL generation, file uploads, and cover extraction.
+ * Upload service for S3 storage.
+ * Handles PDF hashing, multipart file uploads, and cover extraction.
  *
  * @module local_reblibrary/services/upload
  * @copyright 2025 Rwanda Education Board
@@ -12,8 +12,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Configure PDF.js worker using CDN for reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
-// Declare AMD module types for TypeScript
-declare const require: any;
+// Moodle global config
+declare const M: { cfg: { sesskey: string; wwwroot: string } };
 
 /**
  * Upload progress information
@@ -51,67 +51,72 @@ export async function computeFileHash(file: File): Promise<string> {
 }
 
 /**
- * Convert blob/file to base64 string.
- *
- * @param blob Blob or File to convert
- * @returns Promise resolving to base64 string (without data: prefix)
- */
-async function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      // Remove data:...;base64, prefix
-      const base64 = result.split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-/**
- * Upload PDF and cover to backend API.
+ * Upload PDF and cover via multipart form data.
+ * Uses XMLHttpRequest for real upload progress tracking.
  *
  * @param pdfHash SHA-256 hash of PDF file
  * @param pdfFile PDF file
  * @param coverBlob Cover image blob (JPEG)
+ * @param onProgress Progress callback for upload stage
  * @returns Promise resolving to upload result
  */
-async function uploadViaBackend(
+async function uploadViaMultipart(
   pdfHash: string,
   pdfFile: File,
-  coverBlob: Blob
+  coverBlob: Blob,
+  onProgress: (progress: UploadProgress) => void
 ): Promise<{ pdfUrl: string; coverUrl: string }> {
-  // Convert files to base64
-  const pdfBase64 = await blobToBase64(pdfFile);
-  const coverBase64 = await blobToBase64(coverBlob);
+  const formData = new FormData();
+  formData.append('pdf_hash', pdfHash);
+  formData.append('sesskey', M.cfg.sesskey);
+  formData.append('pdf', pdfFile, pdfFile.name);
+  formData.append('cover', coverBlob, 'cover.jpg');
+
+  const totalBytes = pdfFile.size + coverBlob.size;
 
   return new Promise((resolve, reject) => {
-    require(['core/ajax'], (ajax: any) => {
-      ajax.call([{
-        methodname: 'local_reblibrary_upload_resource_file',
-        args: {
-          pdf_hash: pdfHash,
-          pdf_content: pdfBase64,
-          cover_content: coverBase64,
-        }
-      }])[0]
-        .then((result: any) => {
-          if (result.success) {
-            resolve({
-              pdfUrl: result.pdf_url,
-              coverUrl: result.cover_url,
-            });
-          } else {
-            reject(new Error('Upload failed'));
-          }
-        })
-        .catch((error: any) => {
-          console.error('Backend upload failed:', error);
-          reject(new Error(error.message || 'Failed to upload files'));
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        // Map upload progress to 50-95% range (hashing + cover extraction = 0-50%)
+        const uploadPercent = (e.loaded / e.total) * 45 + 50;
+        onProgress({
+          stage: 'uploading_pdf',
+          progress: uploadPercent,
+          message: `Uploading to backend (${formatFileSize(e.loaded)} / ${formatFileSize(e.total)})...`,
+          bytesUploaded: e.loaded,
+          bytesTotal: e.total,
         });
+      }
     });
+
+    xhr.addEventListener('load', () => {
+      try {
+        const result = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300 && result.success) {
+          resolve({
+            pdfUrl: result.pdf_url,
+            coverUrl: result.cover_url,
+          });
+        } else {
+          reject(new Error(result.error || 'Upload failed'));
+        }
+      } catch {
+        reject(new Error('Invalid server response'));
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new Error('Network error during upload'));
+    });
+
+    xhr.addEventListener('abort', () => {
+      reject(new Error('Upload was aborted'));
+    });
+
+    xhr.open('POST', M.cfg.wwwroot + '/local/reblibrary/upload_file.php');
+    xhr.send(formData);
   });
 }
 
@@ -228,7 +233,7 @@ export function formatFileSize(bytes: number): string {
 
 /**
  * Complete upload workflow for PDF resource file.
- * Handles hashing, cover extraction, and backend upload (no S3 APIs from client).
+ * Handles hashing, cover extraction, and multipart upload with progress tracking.
  *
  * @param pdfFile PDF file to upload
  * @param onProgress Progress callback
@@ -270,7 +275,7 @@ export async function uploadResourceFiles(
       message: `Cover extracted (${formatFileSize(coverBlob.size)})`,
     });
 
-    // Stage 3: Upload via backend (PDF + cover in one request)
+    // Stage 3: Upload via multipart form data (PDF + cover in one request)
     onProgress({
       stage: 'uploading_pdf',
       progress: 50,
@@ -278,7 +283,7 @@ export async function uploadResourceFiles(
       bytesTotal: pdfFile.size + coverBlob.size,
     });
 
-    const result = await uploadViaBackend(pdfHash, pdfFile, coverBlob);
+    const result = await uploadViaMultipart(pdfHash, pdfFile, coverBlob, onProgress);
 
     // Complete
     onProgress({
