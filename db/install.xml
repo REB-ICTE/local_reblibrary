@@ -143,8 +143,6 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="unique_assignment" UNIQUE="true" FIELDS="resource_id, class_id, section_id" COMMENT="Prevents duplicate assignments"/>
-        <INDEX NAME="resource_idx" UNIQUE="false" FIELDS="resource_id"/>
-        <INDEX NAME="class_idx" UNIQUE="false" FIELDS="class_id"/>
       </INDEXES>
     </TABLE>
 
@@ -161,8 +159,6 @@
         <KEY NAME="resource_category" TYPE="unique" FIELDS="resource_id, category_id" COMMENT="Prevents duplicate resource-category pairs"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="resource_idx" UNIQUE="false" FIELDS="resource_id"/>
-        <INDEX NAME="category_idx" UNIQUE="false" FIELDS="category_id"/>
       </INDEXES>
     </TABLE>
 
@@ -193,8 +189,6 @@
         <KEY NAME="resource_label" TYPE="unique" FIELDS="resource_id, label_id" COMMENT="Prevents duplicate resource-label pairs"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="resource_idx" UNIQUE="false" FIELDS="resource_id"/>
-        <INDEX NAME="label_idx" UNIQUE="false" FIELDS="label_id"/>
       </INDEXES>
     </TABLE>
   </TABLES>

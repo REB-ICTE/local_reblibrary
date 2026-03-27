@@ -119,10 +119,6 @@ function xmldb_local_reblibrary_upgrade($oldversion) {
         $table->add_key('label_id', XMLDB_KEY_FOREIGN, ['label_id'], 'local_reblibrary_labels', ['id']);
         $table->add_key('resource_label', XMLDB_KEY_UNIQUE, ['resource_id', 'label_id']);
 
-        // Adding indexes to table local_reblibrary_res_labels.
-        $table->add_index('resource_idx', XMLDB_INDEX_NOTUNIQUE, ['resource_id']);
-        $table->add_index('label_idx', XMLDB_INDEX_NOTUNIQUE, ['label_id']);
-
         // Conditionally launch create table for local_reblibrary_res_labels.
         if (!$dbman->table_exists($table)) {
             $dbman->create_table($table);
