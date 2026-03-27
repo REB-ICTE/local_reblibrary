@@ -5,6 +5,7 @@ import { ResourceService } from "../services/resources";
 import type { Category } from "../services/categories";
 import Sidebar from "./shared/Sidebar";
 import PDFReader from "./shared/PDFReader";
+import VideoPlayer from "./shared/VideoPlayer";
 import { getAdminMenuItems } from "../config/admin-menu";
 import { getLibraryMenuItems } from "../config/library-menu";
 
@@ -75,7 +76,7 @@ const BookCard = ({ resource, onViewBook }: BookCardProps) => {
             onClick={() => resource.file_url && onViewBook?.(resource)}
             style={{ cursor: resource.file_url ? 'pointer' : 'default' }}
         >
-            <div className="book-cover-container">
+            <div className="book-cover-container" style={{ position: 'relative' }}>
                 <img
                     src={resource.cover_image_url || placeholderImage}
                     alt={resource.title}
@@ -84,6 +85,23 @@ const BookCard = ({ resource, onViewBook }: BookCardProps) => {
                         (e.target as HTMLImageElement).src = placeholderImage;
                     }}
                 />
+                {resource.media_type === 'video' && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        background: 'rgba(0,0,0,0.6)',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}>
+                        <i className="fa fa-play" style={{ color: 'white', fontSize: '16px', marginLeft: '3px' }}></i>
+                    </div>
+                )}
             </div>
             <h3 className="book-title truncate" title={resource.title}>{resource.title}</h3>
             <p className="book-author truncate" title={resource.author_name}>{resource.author_name}</p>
@@ -445,10 +463,17 @@ export default function LibraryHome({
 
             <main className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
                 {viewingResource ? (
-                    <PDFReader
-                        resource={viewingResource}
-                        onClose={() => setViewingResource(null)}
-                    />
+                    viewingResource.media_type === 'video' ? (
+                        <VideoPlayer
+                            resource={viewingResource}
+                            onClose={() => setViewingResource(null)}
+                        />
+                    ) : (
+                        <PDFReader
+                            resource={viewingResource}
+                            onClose={() => setViewingResource(null)}
+                        />
+                    )
                 ) : (
                 <>
                     {/* Fixed Header: Search Bar and Filters */}

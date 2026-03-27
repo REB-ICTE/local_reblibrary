@@ -17,8 +17,14 @@ import Sidebar from "../shared/Sidebar";
 import Toast from "../shared/Toast";
 import { getAdminMenuItems } from "../../config/admin-menu";
 import { getLibraryMenuItems } from "../../config/library-menu";
-import { uploadResourceFiles, type UploadProgress } from "../../services/upload";
+import { uploadResourceFiles, type UploadProgress, type UploadOptions } from "../../services/upload";
 import PdfPreview from "./PdfPreview";
+
+// File type config per media type
+const FILE_TYPE_CONFIG: Record<string, { accept: string; label: string; maxSize: number; maxSizeLabel: string }> = {
+    text: { accept: 'application/pdf', label: 'PDF File', maxSize: 100 * 1024 * 1024, maxSizeLabel: '100MB' },
+    video: { accept: 'video/mp4,video/webm', label: 'Video File', maxSize: 500 * 1024 * 1024, maxSizeLabel: '500MB' },
+};
 import UploadProgressComponent from "./UploadProgress";
 
 // Signals for state management
@@ -98,7 +104,8 @@ export default function Resources({
     });
 
     // File upload state
-    const [selectedPdf, setSelectedPdf] = useState<File | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedCover, setSelectedCover] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -166,7 +173,8 @@ export default function Resources({
     const handleCancelResource = () => {
         setShowResourceForm(false);
         setEditingResource(null);
-        setSelectedPdf(null);
+        setSelectedFile(null);
+        setSelectedCover(null);
         setUploadProgress(null);
     };
 
@@ -176,20 +184,51 @@ export default function Resources({
 
         if (!file) return;
 
+        const config = FILE_TYPE_CONFIG[resourceFormData.media_type || 'text'];
+        const allowedTypes = config.accept.split(',');
+
         // Validate file type
-        if (file.type !== 'application/pdf') {
-            errorSignal.value = 'Please select a PDF file';
+        if (!allowedTypes.includes(file.type)) {
+            errorSignal.value = `Please select a valid ${config.label.toLowerCase()} (${config.accept})`;
             return;
         }
 
-        // Validate file size (max 100MB)
-        if (file.size > 100 * 1024 * 1024) {
-            errorSignal.value = 'File size must be less than 100MB';
+        // Validate file size
+        if (file.size > config.maxSize) {
+            errorSignal.value = `File size must be less than ${config.maxSizeLabel}`;
             return;
         }
 
-        setSelectedPdf(file);
+        setSelectedFile(file);
         errorSignal.value = null;
+    };
+
+    const handleCoverSelect = (e: Event) => {
+        const input = e.target as HTMLInputElement;
+        const file = input.files?.[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            errorSignal.value = 'Please select an image file for the cover';
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            errorSignal.value = 'Cover image must be less than 10MB';
+            return;
+        }
+
+        setSelectedCover(file);
+        errorSignal.value = null;
+    };
+
+    // Clear selected file when media_type changes
+    const handleMediaTypeChange = (newMediaType: string) => {
+        setResourceFormData({ ...resourceFormData, media_type: newMediaType });
+        setSelectedFile(null);
+        setSelectedCover(null);
+        setUploadProgress(null);
     };
 
     const handleSubmitResource = async (e: Event) => {
@@ -211,17 +250,24 @@ export default function Resources({
         successSignal.value = null;
 
         try {
-            // Upload files if PDF selected
+            // Upload files if file selected
             let fileUrl = resourceFormData.file_url;
             let coverUrl = resourceFormData.cover_image_url;
 
-            if (selectedPdf) {
-                const { pdfUrl, coverUrl: newCoverUrl } = await uploadResourceFiles(
-                    selectedPdf,
-                    setUploadProgress
+            if (selectedFile) {
+                const uploadOptions: UploadOptions = {
+                    mediaType: resourceFormData.media_type || 'text',
+                    coverFile: selectedCover || undefined,
+                };
+                const result = await uploadResourceFiles(
+                    selectedFile,
+                    setUploadProgress,
+                    uploadOptions
                 );
-                fileUrl = pdfUrl;
-                coverUrl = newCoverUrl;
+                fileUrl = result.fileUrl;
+                if (result.coverUrl) {
+                    coverUrl = result.coverUrl;
+                }
             }
 
             // Update form data with file URLs
@@ -265,7 +311,8 @@ export default function Resources({
             successSignal.value = editingResource ? 'Resource updated successfully' : 'Resource created successfully';
 
             // Reset state
-            setSelectedPdf(null);
+            setSelectedFile(null);
+            setSelectedCover(null);
             setUploadProgress(null);
             handleCancelResource();
         } catch (error: any) {
@@ -516,7 +563,7 @@ export default function Resources({
                                                     </label>
                                                     <select
                                                         value={resourceFormData.media_type}
-                                                        onChange={(e) => setResourceFormData({ ...resourceFormData, media_type: (e.target as HTMLSelectElement).value })}
+                                                        onChange={(e) => handleMediaTypeChange((e.target as HTMLSelectElement).value)}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
                                                     >
                                                         <option value="text">Text/PDF</option>
@@ -526,32 +573,51 @@ export default function Resources({
                                                 </div>
 
                                                 <div className="md:col-span-2">
+                                                    {(() => {
+                                                        const mediaType = resourceFormData.media_type || 'text';
+                                                        const config = FILE_TYPE_CONFIG[mediaType] || FILE_TYPE_CONFIG.text;
+                                                        const isVideo = mediaType === 'video';
+                                                        const fileIcon = isVideo ? 'fa-file-video' : 'fa-file-pdf';
+                                                        const fileIconColor = isVideo ? 'text-purple-500' : 'text-red-500';
+
+                                                        return (
+                                                            <>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        PDF File <span className="text-red-500">*</span>
+                                                        {config.label} <span className="text-red-500">*</span>
                                                     </label>
 
-                                                    {!selectedPdf && !editingResource?.file_url ? (
+                                                    {!selectedFile && !editingResource?.file_url ? (
                                                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
                                                             <input
                                                                 type="file"
-                                                                accept="application/pdf"
+                                                                accept={config.accept}
                                                                 onChange={handleFileSelect}
                                                                 className="hidden"
-                                                                id="pdf-upload"
+                                                                id="file-upload"
                                                             />
-                                                            <label htmlFor="pdf-upload" className="cursor-pointer">
+                                                            <label htmlFor="file-upload" className="cursor-pointer">
                                                                 <i className="fa fa-cloud-upload text-4xl text-gray-400 mb-2"></i>
-                                                                <p className="text-gray-700 font-medium">Click to upload PDF</p>
+                                                                <p className="text-gray-700 font-medium">Click to upload {config.label.toLowerCase()}</p>
                                                                 <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
-                                                                <p className="text-xs text-gray-400 mt-2">PDF files up to 100MB</p>
+                                                                <p className="text-xs text-gray-400 mt-2">{config.label} up to {config.maxSizeLabel}</p>
                                                             </label>
                                                         </div>
-                                                    ) : selectedPdf ? (
+                                                    ) : selectedFile ? (
                                                         <div>
-                                                            <PdfPreview file={selectedPdf} />
+                                                            {mediaType === 'text' ? (
+                                                                <PdfPreview file={selectedFile} />
+                                                            ) : (
+                                                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center gap-3">
+                                                                    <i className={`fa ${fileIcon} text-3xl ${fileIconColor}`}></i>
+                                                                    <div>
+                                                                        <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                                                                        <p className="text-sm text-gray-500">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             <button
                                                                 type="button"
-                                                                onClick={() => setSelectedPdf(null)}
+                                                                onClick={() => setSelectedFile(null)}
                                                                 className="mt-2 text-sm text-red-600 hover:text-red-800"
                                                             >
                                                                 <i className="fa fa-times mr-1"></i>
@@ -570,13 +636,13 @@ export default function Resources({
                                                                                 className="w-32 h-auto border-2 border-gray-300 rounded shadow-sm"
                                                                             />
                                                                         ) : (
-                                                                            <i className="fa fa-file-pdf text-5xl text-red-500"></i>
+                                                                            <i className={`fa ${fileIcon} text-5xl ${fileIconColor}`}></i>
                                                                         )}
                                                                     </div>
                                                                     <div className="flex-1 min-w-0">
                                                                         <h4 className="font-medium text-gray-900 mb-2">
-                                                                            <i className="fa fa-file-pdf text-red-500 mr-2"></i>
-                                                                            Current PDF File
+                                                                            <i className={`fa ${fileIcon} ${fileIconColor} mr-2`}></i>
+                                                                            Current {config.label}
                                                                         </h4>
                                                                         <p className="text-sm text-gray-600 mb-2 break-all">
                                                                             <i className="fa fa-link text-xs mr-1"></i>
@@ -597,26 +663,73 @@ export default function Resources({
                                                             <div className="border-t border-gray-200 pt-3">
                                                                 <p className="text-sm text-gray-700 mb-2">
                                                                     <i className="fa fa-info-circle mr-1"></i>
-                                                                    Upload a new PDF to replace the current file
+                                                                    Upload a new file to replace the current one
                                                                 </p>
                                                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors cursor-pointer">
                                                                     <input
                                                                         type="file"
-                                                                        accept="application/pdf"
+                                                                        accept={config.accept}
                                                                         onChange={handleFileSelect}
                                                                         className="hidden"
-                                                                        id="pdf-upload-replace"
+                                                                        id="file-upload-replace"
                                                                     />
-                                                                    <label htmlFor="pdf-upload-replace" className="cursor-pointer">
+                                                                    <label htmlFor="file-upload-replace" className="cursor-pointer">
                                                                         <i className="fa fa-upload text-2xl text-gray-400 mb-1"></i>
-                                                                        <p className="text-sm text-gray-700 font-medium">Click to replace PDF</p>
-                                                                        <p className="text-xs text-gray-400 mt-1">PDF files up to 100MB</p>
+                                                                        <p className="text-sm text-gray-700 font-medium">Click to replace {config.label.toLowerCase()}</p>
+                                                                        <p className="text-xs text-gray-400 mt-1">{config.label} up to {config.maxSizeLabel}</p>
                                                                     </label>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     ) : null}
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </div>
+
+                                                {/* Cover image upload for video */}
+                                                {(resourceFormData.media_type === 'video') && (
+                                                    <div className="md:col-span-2">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Cover Image <span className="text-gray-400">(optional)</span>
+                                                        </label>
+                                                        {!selectedCover ? (
+                                                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/jpeg,image/png,image/webp"
+                                                                    onChange={handleCoverSelect}
+                                                                    className="hidden"
+                                                                    id="cover-upload"
+                                                                />
+                                                                <label htmlFor="cover-upload" className="cursor-pointer">
+                                                                    <i className="fa fa-image text-2xl text-gray-400 mb-1"></i>
+                                                                    <p className="text-sm text-gray-700 font-medium">Click to upload cover image</p>
+                                                                    <p className="text-xs text-gray-400 mt-1">JPEG, PNG, or WebP up to 10MB</p>
+                                                                </label>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                                                <img
+                                                                    src={URL.createObjectURL(selectedCover)}
+                                                                    alt="Cover preview"
+                                                                    className="w-16 h-auto rounded border border-gray-300"
+                                                                />
+                                                                <div className="flex-1">
+                                                                    <p className="text-sm font-medium text-gray-900">{selectedCover.name}</p>
+                                                                    <p className="text-xs text-gray-500">{(selectedCover.size / 1024).toFixed(0)} KB</p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedCover(null)}
+                                                                    className="text-sm text-red-600 hover:text-red-800"
+                                                                >
+                                                                    <i className="fa fa-times"></i>
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 {uploadProgress && (
                                                     <div className="md:col-span-2">
@@ -624,11 +737,13 @@ export default function Resources({
                                                     </div>
                                                 )}
 
-                                                {selectedPdf && uploadProgress?.stage === 'complete' && (
+                                                {selectedFile && uploadProgress?.stage === 'complete' && (
                                                     <div className="md:col-span-2 bg-green-50 border border-green-200 rounded-lg p-3">
                                                         <i className="fa fa-check-circle text-green-600 mr-2"></i>
                                                         <span className="text-green-800 text-sm">
-                                                            Files uploaded successfully! Cover auto-generated from first page.
+                                                            {resourceFormData.media_type === 'text'
+                                                                ? 'Files uploaded successfully! Cover auto-generated from first page.'
+                                                                : 'File uploaded successfully!'}
                                                         </span>
                                                     </div>
                                                 )}

@@ -1,16 +1,11 @@
 /**
  * Upload service for S3 storage.
- * Handles PDF hashing, multipart file uploads, and cover extraction.
+ * Handles file hashing, multipart uploads, and cover extraction (PDF only).
  *
  * @module local_reblibrary/services/upload
  * @copyright 2025 Rwanda Education Board
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker using CDN for reliability
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 // Moodle global config
 declare const M: { cfg: { sesskey: string; wwwroot: string } };
@@ -19,7 +14,7 @@ declare const M: { cfg: { sesskey: string; wwwroot: string } };
  * Upload progress information
  */
 export interface UploadProgress {
-  stage: 'hashing' | 'requesting_urls' | 'uploading_pdf' | 'extracting_cover' | 'uploading_cover' | 'complete';
+  stage: 'hashing' | 'requesting_urls' | 'uploading_pdf' | 'uploading_file' | 'extracting_cover' | 'uploading_cover' | 'complete';
   progress: number; // 0-100
   message: string;
   bytesUploaded?: number;
@@ -38,6 +33,24 @@ export interface PdfMetadata {
 }
 
 /**
+ * Options for uploadResourceFiles
+ */
+export interface UploadOptions {
+  mediaType?: string;   // 'text' | 'video' (default: 'text')
+  coverFile?: File;     // Manual cover image (used for video)
+}
+
+/**
+ * Upload result
+ */
+export interface UploadResult {
+  fileUrl: string;
+  coverUrl: string;
+  // Backward compat aliases
+  pdfUrl: string;
+}
+
+/**
  * Compute SHA-256 hash of a file.
  *
  * @param file File to hash
@@ -51,28 +64,27 @@ export async function computeFileHash(file: File): Promise<string> {
 }
 
 /**
- * Upload PDF and cover via multipart form data.
+ * Upload file and optional cover via multipart form data.
  * Uses XMLHttpRequest for real upload progress tracking.
- *
- * @param pdfHash SHA-256 hash of PDF file
- * @param pdfFile PDF file
- * @param coverBlob Cover image blob (JPEG)
- * @param onProgress Progress callback for upload stage
- * @returns Promise resolving to upload result
  */
 async function uploadViaMultipart(
-  pdfHash: string,
-  pdfFile: File,
-  coverBlob: Blob,
+  fileHash: string,
+  file: File,
+  mediaType: string,
+  coverBlob: Blob | null,
   onProgress: (progress: UploadProgress) => void
-): Promise<{ pdfUrl: string; coverUrl: string }> {
+): Promise<{ fileUrl: string; coverUrl: string }> {
   const formData = new FormData();
-  formData.append('pdf_hash', pdfHash);
+  formData.append('file_hash', fileHash);
+  formData.append('media_type', mediaType);
   formData.append('sesskey', M.cfg.sesskey);
-  formData.append('pdf', pdfFile, pdfFile.name);
-  formData.append('cover', coverBlob, 'cover.jpg');
+  formData.append('file', file, file.name);
+  if (coverBlob) {
+    const coverName = coverBlob instanceof File ? coverBlob.name : 'cover.jpg';
+    formData.append('cover', coverBlob, coverName);
+  }
 
-  const totalBytes = pdfFile.size + coverBlob.size;
+  const stage = mediaType === 'video' ? 'uploading_file' : 'uploading_pdf';
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -82,7 +94,7 @@ async function uploadViaMultipart(
         // Map upload progress to 50-95% range (hashing + cover extraction = 0-50%)
         const uploadPercent = (e.loaded / e.total) * 45 + 50;
         onProgress({
-          stage: 'uploading_pdf',
+          stage,
           progress: uploadPercent,
           message: `Uploading to backend (${formatFileSize(e.loaded)} / ${formatFileSize(e.total)})...`,
           bytesUploaded: e.loaded,
@@ -96,8 +108,8 @@ async function uploadViaMultipart(
         const result = JSON.parse(xhr.responseText);
         if (xhr.status >= 200 && xhr.status < 300 && result.success) {
           resolve({
-            pdfUrl: result.pdf_url,
-            coverUrl: result.cover_url,
+            fileUrl: result.file_url || result.pdf_url,
+            coverUrl: result.cover_url || '',
           });
         } else {
           reject(new Error(result.error || 'Upload failed'));
@@ -133,6 +145,10 @@ export async function extractPdfCover(
   scale: number = 2.0,
   quality: number = 0.85
 ): Promise<Blob> {
+  // Dynamically import PDF.js only when needed
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
   try {
     // Load PDF
     const arrayBuffer = await pdfFile.arrayBuffer();
@@ -193,6 +209,9 @@ export async function extractPdfCover(
  * @returns Promise resolving to PDF metadata
  */
 export async function getPdfMetadata(pdfFile: File): Promise<PdfMetadata> {
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
   try {
     const arrayBuffer = await pdfFile.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -232,27 +251,31 @@ export function formatFileSize(bytes: number): string {
 }
 
 /**
- * Complete upload workflow for PDF resource file.
- * Handles hashing, cover extraction, and multipart upload with progress tracking.
+ * Complete upload workflow for resource file.
+ * Handles hashing, optional cover extraction (PDF), and multipart upload with progress tracking.
  *
- * @param pdfFile PDF file to upload
+ * @param file File to upload (PDF or video)
  * @param onProgress Progress callback
- * @returns Promise resolving to proxy URLs for PDF and cover
+ * @param options Upload options (mediaType, coverFile)
+ * @returns Promise resolving to proxy URLs for file and cover
  */
 export async function uploadResourceFiles(
-  pdfFile: File,
-  onProgress: (progress: UploadProgress) => void
-): Promise<{ pdfUrl: string; coverUrl: string }> {
+  file: File,
+  onProgress: (progress: UploadProgress) => void,
+  options?: UploadOptions
+): Promise<UploadResult> {
+  const mediaType = options?.mediaType || 'text';
+  const coverFile = options?.coverFile || null;
 
   try {
-    // Stage 1: Hash PDF
+    // Stage 1: Hash file
     onProgress({
       stage: 'hashing',
       progress: 0,
       message: 'Computing file hash...',
     });
 
-    const pdfHash = await computeFileHash(pdfFile);
+    const fileHash = await computeFileHash(file);
 
     onProgress({
       stage: 'hashing',
@@ -260,30 +283,53 @@ export async function uploadResourceFiles(
       message: 'File hash computed',
     });
 
-    // Stage 2: Extract cover
-    onProgress({
-      stage: 'extracting_cover',
-      progress: 25,
-      message: 'Extracting cover image from first page...',
-    });
+    // Stage 2: Handle cover image
+    let coverBlob: Blob | null = null;
 
-    const coverBlob = await extractPdfCover(pdfFile);
+    if (mediaType === 'text') {
+      // For PDFs: auto-extract cover from first page
+      onProgress({
+        stage: 'extracting_cover',
+        progress: 25,
+        message: 'Extracting cover image from first page...',
+      });
 
-    onProgress({
-      stage: 'extracting_cover',
-      progress: 40,
-      message: `Cover extracted (${formatFileSize(coverBlob.size)})`,
-    });
+      coverBlob = await extractPdfCover(file);
 
-    // Stage 3: Upload via multipart form data (PDF + cover in one request)
+      onProgress({
+        stage: 'extracting_cover',
+        progress: 40,
+        message: `Cover extracted (${formatFileSize(coverBlob.size)})`,
+      });
+    } else if (coverFile) {
+      // For video/audio: use manually provided cover
+      coverBlob = coverFile;
+
+      onProgress({
+        stage: 'extracting_cover',
+        progress: 40,
+        message: `Cover image ready (${formatFileSize(coverFile.size)})`,
+      });
+    } else {
+      // No cover - skip to upload
+      onProgress({
+        stage: 'extracting_cover',
+        progress: 40,
+        message: 'No cover image (optional for video)',
+      });
+    }
+
+    // Stage 3: Upload via multipart form data
+    const uploadStage = mediaType === 'video' ? 'uploading_file' : 'uploading_pdf';
+    const totalSize = file.size + (coverBlob?.size || 0);
     onProgress({
-      stage: 'uploading_pdf',
+      stage: uploadStage,
       progress: 50,
-      message: `Uploading to backend (${formatFileSize(pdfFile.size + coverBlob.size)})...`,
-      bytesTotal: pdfFile.size + coverBlob.size,
+      message: `Uploading to backend (${formatFileSize(totalSize)})...`,
+      bytesTotal: totalSize,
     });
 
-    const result = await uploadViaMultipart(pdfHash, pdfFile, coverBlob, onProgress);
+    const result = await uploadViaMultipart(fileHash, file, mediaType, coverBlob, onProgress);
 
     // Complete
     onProgress({
@@ -293,8 +339,9 @@ export async function uploadResourceFiles(
     });
 
     return {
-      pdfUrl: result.pdfUrl,
+      fileUrl: result.fileUrl,
       coverUrl: result.coverUrl,
+      pdfUrl: result.fileUrl, // backward compat
     };
 
   } catch (error) {

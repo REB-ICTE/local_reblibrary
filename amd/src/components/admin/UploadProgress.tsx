@@ -34,6 +34,7 @@ export default function UploadProgress({
       case 'requesting_urls':
         return 'blue';
       case 'uploading_pdf':
+      case 'uploading_file':
       case 'uploading_cover':
         return 'indigo';
       case 'extracting_cover':
@@ -56,6 +57,8 @@ export default function UploadProgress({
         return 'fa-link';
       case 'uploading_pdf':
         return 'fa-file-pdf';
+      case 'uploading_file':
+        return 'fa-file-video';
       case 'extracting_cover':
         return 'fa-image';
       case 'uploading_cover':
@@ -66,6 +69,8 @@ export default function UploadProgress({
         return 'fa-spinner fa-spin';
     }
   };
+
+  const isFileStage = stage === 'uploading_pdf' || stage === 'uploading_file';
 
   return (
     <div className={`bg-${color}-50 border border-${color}-200 rounded-lg p-4 ${className}`}>
@@ -95,14 +100,14 @@ export default function UploadProgress({
 
       {/* Stage indicator */}
       <div className="flex items-center gap-2 mt-3 text-xs text-${color}-600">
-        <div className={`flex items-center gap-1 ${stage === 'hashing' || stage === 'requesting_urls' || stage === 'uploading_pdf' || stage === 'extracting_cover' || stage === 'uploading_cover' || stage === 'complete' ? 'text-${color}-700 font-medium' : 'text-${color}-400'}`}>
+        <div className={`flex items-center gap-1 ${stage === 'hashing' || stage === 'requesting_urls' || isFileStage || stage === 'extracting_cover' || stage === 'uploading_cover' || stage === 'complete' ? 'text-${color}-700 font-medium' : 'text-${color}-400'}`}>
           <i className={`fa fa-circle text-xs ${stage === 'hashing' ? 'fa-spin' : ''}`}></i>
           Hash
         </div>
         <span>→</span>
-        <div className={`flex items-center gap-1 ${stage === 'uploading_pdf' || stage === 'extracting_cover' || stage === 'uploading_cover' || stage === 'complete' ? 'text-${color}-700 font-medium' : 'text-${color}-400'}`}>
-          <i className={`fa fa-circle text-xs ${stage === 'uploading_pdf' ? 'fa-spin' : ''}`}></i>
-          PDF
+        <div className={`flex items-center gap-1 ${isFileStage || stage === 'extracting_cover' || stage === 'uploading_cover' || stage === 'complete' ? 'text-${color}-700 font-medium' : 'text-${color}-400'}`}>
+          <i className={`fa fa-circle text-xs ${isFileStage ? 'fa-spin' : ''}`}></i>
+          File
         </div>
         <span>→</span>
         <div className={`flex items-center gap-1 ${stage === 'extracting_cover' || stage === 'uploading_cover' || stage === 'complete' ? 'text-${color}-700 font-medium' : 'text-${color}-400'}`}>

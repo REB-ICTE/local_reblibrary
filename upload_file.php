@@ -17,7 +17,7 @@
 /**
  * File upload endpoint for REB Library resources.
  *
- * Accepts multipart file uploads (PDF + cover image) and stores them in S3.
+ * Accepts multipart file uploads (PDF/video + optional cover image) and stores them in S3.
  * This avoids the base64-over-AJAX approach which cannot handle large files.
  *
  * @package    local_reblibrary
@@ -37,21 +37,43 @@ require_capability('local/reblibrary:manageresources', $context);
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Allowed MIME types per media type.
+$allowedmimetypes = [
+    'text' => ['application/pdf' => 'pdf'],
+    'video' => ['video/mp4' => 'mp4', 'video/webm' => 'webm'],
+];
+
+// Max file size per media type.
+$maxfilesizes = [
+    'text' => 100 * 1024 * 1024,   // 100MB
+    'video' => 500 * 1024 * 1024,   // 500MB
+];
+
 try {
     // Validate request method.
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         throw new moodle_exception('invalidrequest', 'error', '', null, 'POST method required');
     }
 
-    // Get and validate PDF hash.
-    $pdfhash = required_param('pdf_hash', PARAM_ALPHANUM);
-    if (!preg_match('/^[a-f0-9]{64}$/i', $pdfhash)) {
-        throw new invalid_parameter_exception('Invalid PDF hash format. Expected SHA-256 (64 hex characters).');
+    // Get media type (default to 'text' for backward compatibility).
+    $mediatype = optional_param('media_type', 'text', PARAM_ALPHA);
+    if (!isset($allowedmimetypes[$mediatype])) {
+        throw new invalid_parameter_exception('Invalid media type. Allowed: ' . implode(', ', array_keys($allowedmimetypes)));
     }
 
-    // Validate uploaded files.
-    if (empty($_FILES['pdf']) || $_FILES['pdf']['error'] !== UPLOAD_ERR_OK) {
-        $errorcode = $_FILES['pdf']['error'] ?? -1;
+    // Get and validate file hash (accept 'file_hash' or 'pdf_hash' for backward compat).
+    $filehash = optional_param('file_hash', '', PARAM_ALPHANUM);
+    if (empty($filehash)) {
+        $filehash = required_param('pdf_hash', PARAM_ALPHANUM);
+    }
+    if (!preg_match('/^[a-f0-9]{64}$/i', $filehash)) {
+        throw new invalid_parameter_exception('Invalid file hash format. Expected SHA-256 (64 hex characters).');
+    }
+
+    // Validate uploaded file (accept 'file' or 'pdf' for backward compat).
+    $filefield = !empty($_FILES['file']) ? 'file' : 'pdf';
+    if (empty($_FILES[$filefield]) || $_FILES[$filefield]['error'] !== UPLOAD_ERR_OK) {
+        $errorcode = $_FILES[$filefield]['error'] ?? -1;
         $errormsg = match ($errorcode) {
             UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'File exceeds maximum upload size',
             UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
@@ -63,27 +85,42 @@ try {
         throw new moodle_exception('uploadfailed', 'local_reblibrary', '', null, $errormsg);
     }
 
-    if (empty($_FILES['cover']) || $_FILES['cover']['error'] !== UPLOAD_ERR_OK) {
+    // Cover image is required for text/PDF, optional for video.
+    $hascover = !empty($_FILES['cover']) && $_FILES['cover']['error'] === UPLOAD_ERR_OK;
+    if ($mediatype === 'text' && !$hascover) {
         throw new moodle_exception('uploadfailed', 'local_reblibrary', '', null, 'Cover image upload failed');
     }
 
-    $pdftmppath = $_FILES['pdf']['tmp_name'];
-    $covertmppath = $_FILES['cover']['tmp_name'];
-    $pdfsize = $_FILES['pdf']['size'];
-    $coversize = $_FILES['cover']['size'];
+    $filetmppath = $_FILES[$filefield]['tmp_name'];
+    $filesize = $_FILES[$filefield]['size'];
+    $filemimetype = $_FILES[$filefield]['type'];
 
-    // Validate file sizes.
-    if ($pdfsize > 100 * 1024 * 1024) {
-        throw new invalid_parameter_exception('PDF file exceeds 100MB limit');
+    // Validate MIME type for the given media type.
+    if (!isset($allowedmimetypes[$mediatype][$filemimetype])) {
+        $allowed = implode(', ', array_keys($allowedmimetypes[$mediatype]));
+        throw new invalid_parameter_exception("Invalid file type '{$filemimetype}'. Allowed for {$mediatype}: {$allowed}");
     }
-    if ($coversize > 10 * 1024 * 1024) {
-        throw new invalid_parameter_exception('Cover image exceeds 10MB limit');
+    $fileextension = $allowedmimetypes[$mediatype][$filemimetype];
+
+    // Validate file size.
+    $maxsize = $maxfilesizes[$mediatype];
+    if ($filesize > $maxsize) {
+        $maxmb = $maxsize / (1024 * 1024);
+        throw new invalid_parameter_exception("File exceeds {$maxmb}MB limit");
     }
 
-    // Verify PDF hash matches uploaded file content.
-    $computedhash = hash_file('sha256', $pdftmppath);
-    if ($computedhash !== strtolower($pdfhash)) {
-        throw new invalid_parameter_exception('PDF hash mismatch. Computed: ' . $computedhash);
+    if ($hascover) {
+        $covertmppath = $_FILES['cover']['tmp_name'];
+        $coversize = $_FILES['cover']['size'];
+        if ($coversize > 10 * 1024 * 1024) {
+            throw new invalid_parameter_exception('Cover image exceeds 10MB limit');
+        }
+    }
+
+    // Verify file hash matches uploaded file content.
+    $computedhash = hash_file('sha256', $filetmppath);
+    if ($computedhash !== strtolower($filehash)) {
+        throw new invalid_parameter_exception('File hash mismatch. Computed: ' . $computedhash);
     }
 
     // Initialize S3 client.
@@ -95,54 +132,69 @@ try {
     $property->setAccessible(true);
     $awsclient = $property->getValue($s3);
 
-    // PDF path: content-addressed by hash.
-    $pdfkey = 'resources/' . $pdfhash . '/file.pdf';
+    // File path: content-addressed by hash.
+    $filekey = 'resources/' . $filehash . '/file.' . $fileextension;
 
-    // Check if PDF already exists (deduplication).
-    $pdfexists = $s3->object_exists($pdfkey);
+    // Check if file already exists (deduplication).
+    $fileexists = $s3->object_exists($filekey);
 
-    // Upload PDF only if it doesn't exist.
-    if (!$pdfexists) {
+    // Upload file only if it doesn't exist.
+    if (!$fileexists) {
         $awsclient->putObject([
             'Bucket' => $s3->get_bucket(),
-            'Key' => $pdfkey,
-            'SourceFile' => $pdftmppath,
-            'ContentType' => 'application/pdf',
+            'Key' => $filekey,
+            'SourceFile' => $filetmppath,
+            'ContentType' => $filemimetype,
             'ACL' => 'public-read',
         ]);
     }
 
-    // Cover path: unique per upload (UUID v4).
-    $data = random_bytes(16);
-    $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
-    $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
-    $coveruuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    // Handle cover image upload.
+    $coverurl = '';
+    $coverkey = '';
+    $coversize = 0;
+    if ($hascover) {
+        // Cover path: unique per upload (UUID v4).
+        $data = random_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+        $coveruuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
 
-    $coverkey = 'resources/' . $pdfhash . '/covers/' . $coveruuid . '.jpg';
+        $covermimetype = $_FILES['cover']['type'];
+        $coverext = (strpos($covermimetype, 'png') !== false) ? 'png' : 'jpg';
+        $coverkey = 'resources/' . $filehash . '/covers/' . $coveruuid . '.' . $coverext;
+        $coversize = $_FILES['cover']['size'];
 
-    // Upload cover image.
-    $awsclient->putObject([
-        'Bucket' => $s3->get_bucket(),
-        'Key' => $coverkey,
-        'SourceFile' => $covertmppath,
-        'ContentType' => 'image/jpeg',
-        'ACL' => 'public-read',
-    ]);
+        $awsclient->putObject([
+            'Bucket' => $s3->get_bucket(),
+            'Key' => $coverkey,
+            'SourceFile' => $_FILES['cover']['tmp_name'],
+            'ContentType' => $covermimetype,
+            'ACL' => 'public-read',
+        ]);
+
+        $coverurl = $CFG->wwwroot . '/local/reblibrary/download.php?key=' . urlencode($coverkey);
+    }
 
     // Generate proxy URLs.
-    $pdfurl = $CFG->wwwroot . '/local/reblibrary/download.php?key=' . urlencode($pdfkey);
-    $coverurl = $CFG->wwwroot . '/local/reblibrary/download.php?key=' . urlencode($coverkey);
+    $fileurl = $CFG->wwwroot . '/local/reblibrary/download.php?key=' . urlencode($filekey);
 
     echo json_encode([
         'success' => true,
-        'pdf_hash' => $pdfhash,
-        'pdf_exists' => $pdfexists,
-        'pdf_key' => $pdfkey,
-        'pdf_url' => $pdfurl,
+        'file_hash' => $filehash,
+        'file_exists' => $fileexists,
+        'file_key' => $filekey,
+        'file_url' => $fileurl,
         'cover_key' => $coverkey,
         'cover_url' => $coverurl,
-        'pdf_size' => $pdfsize,
+        'file_size' => $filesize,
         'cover_size' => $coversize,
+        // Backward compatibility aliases.
+        'pdf_hash' => $filehash,
+        'pdf_exists' => $fileexists,
+        'pdf_key' => $filekey,
+        'pdf_url' => $fileurl,
+        'pdf_size' => $filesize,
     ]);
 
 } catch (Exception $e) {

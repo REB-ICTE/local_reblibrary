@@ -105,7 +105,7 @@ try {
     header('ETag: ' . $etag);
     header('Cache-Control: public, max-age=31536000');
 
-    if ($contenttype === 'application/pdf' || strpos($contenttype, 'image/') === 0) {
+    if ($contenttype === 'application/pdf' || strpos($contenttype, 'image/') === 0 || strpos($contenttype, 'video/') === 0) {
         header('Content-Disposition: inline; filename="' . $filename . '"');
     } else {
         header('Content-Disposition: attachment; filename="' . $filename . '"');
