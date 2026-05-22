@@ -28,6 +28,13 @@ export default function Sidebar({
         };
     }, [window.location.search]);
 
+    // Mobile sidebar open/close state
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    // Close mobile sidebar whenever a link is followed (full page nav handles it but
+    // any internal toggle should also close to clean up overlay state on bfcache).
+    const closeMobile = () => setMobileOpen(false);
+
     // State for expand/collapse - use localStorage for persistence
     const getStoredExpandedState = (key: string, defaultValue: boolean = false): boolean => {
         const stored = localStorage.getItem(`sidebar_expanded_${key}`);
@@ -101,7 +108,51 @@ export default function Sidebar({
     }, [classes]);
 
     return (
-        <aside className="w-72 bg-gray-50 border-r border-gray-200 py-6 pr-4 overflow-y-auto">
+        <>
+            {/* Mobile hamburger toggle (only visible below lg).
+                Position is offset by --elby-navbar-height so the button sits
+                just below the theme navbar instead of covering its logo.
+                Falls back to 70px (mobile elby navbar height) when the var
+                isn't defined (e.g. plugin used under another theme). */}
+            <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="lg:hidden fixed left-3 bg-reb-blue text-white rounded-md shadow-lg p-2.5 hover:opacity-90 flex items-center justify-center"
+                style={{
+                    top: 'calc(var(--elby-navbar-height, 70px) + 8px)',
+                    zIndex: 1040,
+                    width: '40px',
+                    height: '40px',
+                }}
+                aria-label="Open library menu"
+            >
+                <i className="fa fa-bars"></i>
+            </button>
+
+            {/* Mobile backdrop */}
+            {mobileOpen && (
+                <div
+                    className="lg:hidden fixed inset-0 bg-black/50"
+                    style={{ zIndex: 1050 }}
+                    onClick={closeMobile}
+                    aria-hidden="true"
+                />
+            )}
+
+            <aside
+                className={`fixed lg:static inset-y-0 left-0 lg:z-auto w-72 max-w-[85vw] bg-gray-50 border-r border-gray-200 py-6 pr-4 overflow-y-auto flex-shrink-0 transform transition-transform duration-200 ease-in-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                style={{ zIndex: 1060 }}
+            >
+                {/* Mobile close button */}
+                <button
+                    type="button"
+                    onClick={closeMobile}
+                    className="lg:hidden absolute top-3 right-3 text-gray-500 hover:text-gray-900 p-2"
+                    aria-label="Close menu"
+                >
+                    <i className="fa fa-times"></i>
+                </button>
+
             {/* Library Menu Section */}
             <div className="mb-8">
                 <h6 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 pl-3">
@@ -238,6 +289,7 @@ export default function Sidebar({
                     </ul>
                 </div>
             )}
-        </aside>
+            </aside>
+        </>
     );
 }

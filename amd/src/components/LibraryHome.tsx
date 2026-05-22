@@ -461,7 +461,7 @@ export default function LibraryHome({
                 classes={initialClasses}
             />
 
-            <main className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+            <main className="flex-1 flex flex-col bg-gray-50 overflow-hidden min-w-0">
                 {viewingResource ? (
                     viewingResource.media_type === 'video' ? (
                         <VideoPlayer
@@ -477,7 +477,7 @@ export default function LibraryHome({
                 ) : (
                 <>
                     {/* Fixed Header: Search Bar and Filters */}
-                    <div className="flex-shrink-0 p-8 pb-4 bg-gray-50">
+                    <div className="flex-shrink-0 p-4 pt-14 pb-3 lg:p-8 lg:pb-4 bg-gray-50">
                         {/* Search and Filter Component */}
                         <div className="max-w-4xl mx-auto">
                             {/* Search Bar */}
@@ -582,7 +582,7 @@ export default function LibraryHome({
                     </div>
 
                     {/* Scrollable Content: Books List */}
-                    <div className="flex-1 overflow-y-auto px-8 pb-8">
+                    <div className="flex-1 overflow-y-auto px-3 pb-6 lg:px-8 lg:pb-8">
                         {/* Main Content Area - Class-based Sections */}
                         {resourcesByClass.length > 0 ? (
                             resourcesByClass.map(({ class: cls, resources: classResources }) => {
@@ -655,7 +655,7 @@ export default function LibraryHome({
                                             <HorizontalScrollContainer>
                                                 <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
                                                     {filteredClassResources.map(resource => (
-                                                        <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                                        <div key={resource.id} className="flex-shrink-0 w-32 sm:w-40">
                                                             <BookCard resource={resource} onViewBook={setViewingResource} />
                                                         </div>
                                                     ))}
@@ -675,7 +675,7 @@ export default function LibraryHome({
                                 <HorizontalScrollContainer>
                                     <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
                                         {unassignedResources.map(resource => (
-                                            <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                            <div key={resource.id} className="flex-shrink-0 w-32 sm:w-40">
                                                 <BookCard resource={resource} onViewBook={setViewingResource} />
                                             </div>
                                         ))}

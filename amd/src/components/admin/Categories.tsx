@@ -230,17 +230,17 @@ export default function Categories({
                 sublevels={eduSublevels}
                 classes={eduClasses}
             />
-            <main className="flex-1 overflow-y-auto bg-gray-50">
-                <div className="p-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-6">
+            <main className="flex-1 overflow-y-auto bg-gray-50 min-w-0">
+                <div className="p-4 pt-14 lg:p-8">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 lg:mb-6">
                         Labels & Categories Management
                     </h1>
 
                     {/* Tab Navigation */}
-                    <div className="flex border-b border-gray-200 mb-6">
+                    <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
                         <button
                             onClick={() => setActiveTab('categories')}
-                            className={`px-6 py-3 font-medium transition-colors ${
+                            className={`px-4 lg:px-6 py-3 font-medium transition-colors whitespace-nowrap ${
                                 activeTab === 'categories'
                                     ? 'border-b-2 border-reb-blue text-reb-blue'
                                     : 'text-gray-600 hover:text-gray-900'
@@ -250,7 +250,7 @@ export default function Categories({
                         </button>
                         <button
                             onClick={() => setActiveTab('labels')}
-                            className={`px-6 py-3 font-medium transition-colors ${
+                            className={`px-4 lg:px-6 py-3 font-medium transition-colors whitespace-nowrap ${
                                 activeTab === 'labels'
                                     ? 'border-b-2 border-reb-blue text-reb-blue'
                                     : 'text-gray-600 hover:text-gray-900'
@@ -262,7 +262,7 @@ export default function Categories({
 
                     {/* Categories Tab */}
                     {activeTab === 'categories' && (
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="bg-white rounded-lg shadow p-3 lg:p-6">
                         {showForm ? (
                             <>
                                 {/* Back Button */}
@@ -418,7 +418,7 @@ export default function Categories({
 
                     {/* Labels Tab */}
                     {activeTab === 'labels' && (
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="bg-white rounded-lg shadow p-3 lg:p-6">
                         {showLabelForm ? (
                             <>
                                 {/* Back Button */}

@@ -446,17 +446,17 @@ export default function Resources({
                 sublevels={eduSublevels}
                 classes={eduClasses}
             />
-            <main className="flex-1 overflow-y-auto bg-gray-50">
-                <div className="p-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-6">
+            <main className="flex-1 overflow-y-auto bg-gray-50 min-w-0">
+                <div className="p-4 pt-14 lg:p-8">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 lg:mb-6">
                         Resources & Authors Management
                     </h1>
 
                     {/* Tabs */}
-                    <div className="flex border-b border-gray-200 mb-6">
+                    <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
                         <button
                             onClick={() => setActiveTab('resources')}
-                            className={`px-6 py-3 font-medium transition-colors ${
+                            className={`px-4 lg:px-6 py-3 font-medium transition-colors whitespace-nowrap ${
                                 activeTab === 'resources'
                                     ? 'border-b-2 border-reb-blue text-reb-blue'
                                     : 'text-gray-600 hover:text-gray-900'
@@ -466,7 +466,7 @@ export default function Resources({
                         </button>
                         <button
                             onClick={() => setActiveTab('authors')}
-                            className={`px-6 py-3 font-medium transition-colors ${
+                            className={`px-4 lg:px-6 py-3 font-medium transition-colors whitespace-nowrap ${
                                 activeTab === 'authors'
                                     ? 'border-b-2 border-reb-blue text-reb-blue'
                                     : 'text-gray-600 hover:text-gray-900'
@@ -478,7 +478,7 @@ export default function Resources({
 
                     {/* Resources Tab Content */}
                     {activeTab === 'resources' && (
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="bg-white rounded-lg shadow p-3 lg:p-6">
                             {showResourceForm ? (
                                 <>
                                     {/* Back Button */}
@@ -946,7 +946,7 @@ export default function Resources({
 
                     {/* Authors Tab Content */}
                     {activeTab === 'authors' && (
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="bg-white rounded-lg shadow p-3 lg:p-6">
                             {showAuthorForm ? (
                                 <>
                                     {/* Back Button */}

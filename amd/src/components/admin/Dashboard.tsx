@@ -20,8 +20,8 @@ export default function Dashboard({ stats }: DashboardProps) {
     }, []);
 
     return (
-        <section className="p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Dashboard Overview</h2>
+        <section className="p-4 pt-14 lg:p-8">
+            <h2 className="text-xl lg:text-2xl font-semibold text-gray-800 mb-4 lg:mb-6">Dashboard Overview</h2>
 
             {/* Error Message */}
             {errorSignal.value && (
@@ -32,7 +32,7 @@ export default function Dashboard({ stats }: DashboardProps) {
             )}
 
             {/* Stats Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5 mb-6">
                 <StatsCard
                     icon="fa fa-book"
                     number={statsSignal.value.totalResources}

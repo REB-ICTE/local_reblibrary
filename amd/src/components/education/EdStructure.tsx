@@ -82,18 +82,18 @@ export default function EdStructure({
     return (
         <div className="flex min-h-screen bg-white">
             <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
-            <main className="flex-1 overflow-y-auto bg-gray-50">
-                <div className="p-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-6">
+            <main className="flex-1 overflow-y-auto bg-gray-50 min-w-0">
+                <div className="p-4 pt-14 lg:p-8">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 lg:mb-6">
                         Education Structure Management
                     </h1>
 
                     {/* Tab Navigation */}
-                <div className="border-b border-gray-200 mb-6">
-                    <nav className="flex space-x-8">
+                <div className="border-b border-gray-200 mb-6 overflow-x-auto">
+                    <nav className="flex space-x-4 lg:space-x-8 min-w-max">
                         <button
                             onClick={() => handleTabChange('levels')}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                                 activeTab === 'levels'
                                     ? 'border-reb-blue text-reb-blue'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -103,7 +103,7 @@ export default function EdStructure({
                         </button>
                         <button
                             onClick={() => handleTabChange('sublevels')}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                                 activeTab === 'sublevels'
                                     ? 'border-reb-blue text-reb-blue'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -113,7 +113,7 @@ export default function EdStructure({
                         </button>
                         <button
                             onClick={() => handleTabChange('classes')}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                                 activeTab === 'classes'
                                     ? 'border-reb-blue text-reb-blue'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -123,7 +123,7 @@ export default function EdStructure({
                         </button>
                         <button
                             onClick={() => handleTabChange('sections')}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                                 activeTab === 'sections'
                                     ? 'border-reb-blue text-reb-blue'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

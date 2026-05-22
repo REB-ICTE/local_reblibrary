@@ -367,37 +367,51 @@ export default function PDFReader({ resource, onClose }: PDFReaderProps) {
 
     return (
         <div className="pdf-reader-container">
-            {/* Toolbar */}
+            {/* Toolbar.
+                Layout strategy:
+                  - md+ (≥768px): three-column flex with title on the left,
+                    page nav in the center, full zoom+download controls right.
+                  - <md: compact single row — close button, compact page
+                    indicator ("1 / 7"), zoom out / zoom in, download. Title,
+                    fit-width/fit-page, zoom percentage, and section dividers
+                    are hidden so the controls fit a phone width without
+                    horizontal scrolling. */}
             <div className="pdf-toolbar">
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full gap-2">
                     {/* Left: Close and Title */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-shrink">
                         <button
                             onClick={onClose}
-                            className="pdf-control-btn"
+                            className="pdf-control-btn flex-shrink-0"
                             title="Close (Esc)"
+                            aria-label="Close PDF"
                         >
                             <i className="fa fa-times"></i>
                         </button>
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-900">{resource.title}</h2>
+                        <div className="hidden md:block min-w-0">
+                            <h2 className="text-base lg:text-lg font-semibold text-gray-900 truncate">{resource.title}</h2>
                             {resource.author_name && (
-                                <p className="text-sm text-gray-600">{resource.author_name}</p>
+                                <p className="text-sm text-gray-600 truncate">{resource.author_name}</p>
                             )}
                         </div>
                     </div>
 
                     {/* Center: Page Navigation */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 md:gap-3 flex-shrink-0">
                         <button
                             onClick={goToPreviousPage}
                             disabled={currentPage === 1}
                             className="pdf-control-btn"
                             title="Previous Page"
+                            aria-label="Previous page"
                         >
                             <i className="fa fa-chevron-left"></i>
                         </button>
-                        <span className="pdf-page-indicator">
+                        {/* Compact label on mobile, verbose on md+ */}
+                        <span className="pdf-page-indicator md:hidden">
+                            {currentPage} / {numPages}
+                        </span>
+                        <span className="pdf-page-indicator hidden md:inline">
                             Page {currentPage} of {numPages}
                         </span>
                         <button
@@ -405,50 +419,60 @@ export default function PDFReader({ resource, onClose }: PDFReaderProps) {
                             disabled={currentPage === numPages}
                             className="pdf-control-btn"
                             title="Next Page"
+                            aria-label="Next page"
                         >
                             <i className="fa fa-chevron-right"></i>
                         </button>
                     </div>
 
                     {/* Right: Zoom and Download */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 md:gap-3 flex-shrink-0">
                         <button
                             onClick={handleZoomOut}
                             disabled={zoom <= ZOOM_LEVELS[0]}
                             className="pdf-control-btn"
                             title="Zoom Out"
+                            aria-label="Zoom out"
                         >
                             <i className="fa fa-search-minus"></i>
                         </button>
-                        <span className="pdf-zoom-display">{zoom}%</span>
+                        {/* Hide the % readout on mobile to save space. */}
+                        <span className="pdf-zoom-display hidden md:inline">{zoom}%</span>
                         <button
                             onClick={handleZoomIn}
                             disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
                             className="pdf-control-btn"
                             title="Zoom In"
+                            aria-label="Zoom in"
                         >
                             <i className="fa fa-search-plus"></i>
                         </button>
-                        <div className="border-l border-gray-300 h-8 mx-2"></div>
+                        {/* Fit-width / fit-page and their divider hidden on
+                            mobile — less commonly used and the page already
+                            renders at fit-width by default on first load. */}
+                        <div className="hidden md:block border-l border-gray-300 h-8 mx-2"></div>
                         <button
                             onClick={handleFitWidth}
-                            className={`pdf-control-btn ${zoomMode === 'fit-width' ? 'bg-blue-100' : ''}`}
+                            className={`pdf-control-btn hidden md:flex ${zoomMode === 'fit-width' ? 'bg-blue-100' : ''}`}
                             title="Fit to Width"
+                            aria-label="Fit to width"
                         >
                             <i className="fa fa-arrows-alt-h"></i>
                         </button>
                         <button
                             onClick={handleFitPage}
-                            className={`pdf-control-btn ${zoomMode === 'fit-page' ? 'bg-blue-100' : ''}`}
+                            className={`pdf-control-btn hidden md:flex ${zoomMode === 'fit-page' ? 'bg-blue-100' : ''}`}
                             title="Fit to Page"
+                            aria-label="Fit to page"
                         >
                             <i className="fa fa-expand"></i>
                         </button>
-                        <div className="border-l border-gray-300 h-8 mx-2"></div>
+                        <div className="hidden md:block border-l border-gray-300 h-8 mx-2"></div>
                         <button
                             onClick={handleDownload}
                             className="pdf-control-btn"
                             title="Download PDF"
+                            aria-label="Download PDF"
                         >
                             <i className="fa fa-download"></i>
                         </button>

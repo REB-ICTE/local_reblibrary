@@ -26,7 +26,7 @@ export default function App({ levels = [], sublevels = [], classes = [] }: AppPr
 				sublevels={sublevels}
 				classes={classes}
 			/>
-			<main className="flex-1 overflow-y-auto">
+			<main className="flex-1 overflow-y-auto min-w-0">
 				<Dashboard stats={statsSignal.value} />
 			</main>
 		</div>
