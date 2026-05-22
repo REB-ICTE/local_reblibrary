@@ -84,4 +84,54 @@ if ($hassiteconfig) {
         'rw-central-1',
         PARAM_TEXT
     ));
+
+    // Home Page Filtering Settings.
+    $settings->add(new admin_setting_heading(
+        'local_reblibrary/homepagefilteringheading',
+        get_string('homepagefiltering', 'local_reblibrary'),
+        get_string('homepagefiltering_desc', 'local_reblibrary')
+    ));
+
+    // Get all labels dynamically from database.
+    global $DB;
+    $labels = $DB->get_records_menu('local_reblibrary_labels', null, 'label_name ASC', 'id, label_name');
+
+    $settings->add(new admin_setting_configmultiselect(
+        'local_reblibrary/homepage_include_labels',
+        get_string('homepageincludelabels', 'local_reblibrary'),
+        get_string('homepageincludelabels_desc', 'local_reblibrary'),
+        [],
+        $labels
+    ));
+
+    $settings->add(new admin_setting_configmultiselect(
+        'local_reblibrary/homepage_exclude_labels',
+        get_string('homepageexcludelabels', 'local_reblibrary'),
+        get_string('homepageexcludelabels_desc', 'local_reblibrary'),
+        [],
+        $labels
+    ));
+
+    // Reading Materials Page Filtering Settings.
+    $settings->add(new admin_setting_heading(
+        'local_reblibrary/readingmaterialsfilteringheading',
+        get_string('readingmaterialsfiltering', 'local_reblibrary'),
+        get_string('readingmaterialsfiltering_desc', 'local_reblibrary')
+    ));
+
+    $settings->add(new admin_setting_configmultiselect(
+        'local_reblibrary/readingmaterials_include_labels',
+        get_string('readingmaterialsincludelabels', 'local_reblibrary'),
+        get_string('readingmaterialsincludelabels_desc', 'local_reblibrary'),
+        [],
+        $labels
+    ));
+
+    $settings->add(new admin_setting_configmultiselect(
+        'local_reblibrary/readingmaterials_exclude_labels',
+        get_string('readingmaterialsexcludelabels', 'local_reblibrary'),
+        get_string('readingmaterialsexcludelabels_desc', 'local_reblibrary'),
+        [],
+        $labels
+    ));
 }

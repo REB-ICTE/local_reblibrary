@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import { ClassService } from "../../services/edu-structure";
 import type { EduClass, CreateClassData } from "../../services/edu-structure";
 import { sublevelsSignal, classesSignal, loadingSignal, errorSignal, successSignal } from "./EdStructure";
+import { useDragSort } from "../shared/useDragSort";
 
 export default function ClassTab() {
     const [showForm, setShowForm] = useState(false);
@@ -64,10 +65,9 @@ export default function ClassTab() {
                 );
                 successSignal.value = 'Class updated successfully';
             } else {
+                // Create — server assigns next sortorder within its parent sublevel.
                 const created = await ClassService.create(formData);
-                classesSignal.value = [...classesSignal.value, created].sort((a, b) =>
-                    a.class_code.localeCompare(b.class_code)
-                );
+                classesSignal.value = [...classesSignal.value, created];
                 successSignal.value = 'Class created successfully';
             }
             handleCancel();
@@ -101,6 +101,45 @@ export default function ClassTab() {
     const getSublevelName = (sublevelId: number) => {
         return sublevelsSignal.value.find(s => s.id === sublevelId)?.sublevel_name || `ID: ${sublevelId}`;
     };
+
+    // Drag-and-drop reorder — scoped per parent sublevel.
+    const commitReorder = async (newOrder: EduClass[]) => {
+        const previous = classesSignal.value;
+
+        const groups = new Map<number, EduClass[]>();
+        for (const c of newOrder) {
+            const g = groups.get(c.sublevel_id) ?? [];
+            g.push(c);
+            groups.set(c.sublevel_id, g);
+        }
+        const restamped: EduClass[] = [];
+        const dirty: { id: number; sortorder: number }[] = [];
+        for (const [, group] of groups) {
+            group.forEach((item, i) => {
+                const so = i + 1;
+                if (item.sortorder !== so) {
+                    dirty.push({ id: item.id, sortorder: so });
+                }
+                restamped.push({ ...item, sortorder: so });
+            });
+        }
+
+        classesSignal.value = restamped;
+        if (dirty.length === 0) return;
+
+        try {
+            await ClassService.reorder(dirty);
+            successSignal.value = 'Order updated';
+        } catch (error: any) {
+            classesSignal.value = previous;
+            errorSignal.value = error.message || 'Failed to save new order';
+        }
+    };
+
+    const dnd = useDragSort<EduClass>(classesSignal.value, {
+        getGroupKey: (c) => c.sublevel_id,
+        onCommit: commitReorder,
+    });
 
     return (
         <div className="p-6">
@@ -223,9 +262,14 @@ export default function ClassTab() {
                     {/* Table View */}
                     {classesSignal.value.length > 0 ? (
                         <div className="overflow-x-auto">
+                            <p className="text-xs text-gray-500 mb-2">
+                                <i className="fa fa-info-circle mr-1"></i>
+                                Drag rows within the same parent sublevel to reorder.
+                            </p>
                             <table className="w-full border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-200">
+                                        <th className="w-8 py-3 px-2"></th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Class Name</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Class Code</th>
@@ -234,8 +278,29 @@ export default function ClassTab() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {classesSignal.value.map((cls) => (
-                                        <tr key={cls.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                    {classesSignal.value.map((cls, index) => {
+                                        const rowProps = dnd.rowProps(index);
+                                        const handleProps = dnd.handleProps(index);
+                                        return (
+                                        <tr
+                                            key={cls.id}
+                                            draggable={rowProps.draggable}
+                                            onDragOver={rowProps.onDragOver}
+                                            onDragLeave={rowProps.onDragLeave}
+                                            onDrop={rowProps.onDrop}
+                                            onDragEnd={rowProps.onDragEnd}
+                                            className={`border-b border-gray-200 hover:bg-gray-50 ${rowProps.className}`}
+                                        >
+                                            <td
+                                                draggable
+                                                onDragStart={handleProps.onDragStart}
+                                                onMouseDown={handleProps.onMouseDown}
+                                                onMouseUp={handleProps.onMouseUp}
+                                                className={`py-3 px-2 text-center ${handleProps.className}`}
+                                                title="Drag to reorder (within the same parent sublevel)"
+                                            >
+                                                <i className="fa fa-grip-vertical"></i>
+                                            </td>
                                             <td className="py-3 px-4 text-gray-600">{cls.id}</td>
                                             <td className="py-3 px-4 text-gray-900 font-medium">{cls.class_name}</td>
                                             <td className="py-3 px-4">
@@ -263,7 +328,8 @@ export default function ClassTab() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

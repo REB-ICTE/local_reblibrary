@@ -1,9 +1,11 @@
 import { h } from "preact";
 import { useState, useEffect, useMemo, useRef } from "preact/hooks";
 import type { Resource } from "../services/resources";
+import { ResourceService } from "../services/resources";
 import type { Category } from "../services/categories";
 import Sidebar from "./shared/Sidebar";
 import PDFReader from "./shared/PDFReader";
+import VideoPlayer from "./shared/VideoPlayer";
 import { getAdminMenuItems } from "../config/admin-menu";
 import { getLibraryMenuItems } from "../config/library-menu";
 
@@ -41,6 +43,30 @@ interface BookCardProps {
     onViewBook?: (resource: Resource) => void;
 }
 
+/**
+ * Helper function to get unique categories for a set of resources.
+ */
+const getCategoriesForResources = (classResources: Resource[], allCategories: Category[]): Category[] => {
+    const categoryIds = new Set<number>();
+
+    // Collect all unique category IDs from resources
+    classResources.forEach(resource => {
+        if (resource.category_ids) {
+            resource.category_ids.forEach(id => {
+                categoryIds.add(typeof id === 'string' ? parseInt(id) : id);
+            });
+        }
+    });
+
+    // Map IDs to category objects
+    const categories = Array.from(categoryIds)
+        .map(id => allCategories.find(cat => parseInt(cat.id as any) === id))
+        .filter((cat): cat is Category => cat !== undefined)
+        .sort((a, b) => a.category_name.localeCompare(b.category_name));
+
+    return categories;
+};
+
 const BookCard = ({ resource, onViewBook }: BookCardProps) => {
     const placeholderImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="140" height="200" viewBox="0 0 140 200"%3E%3Crect fill="%23e5e7eb" width="140" height="200"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%239ca3af"%3ENo Cover%3C/text%3E%3C/svg%3E';
 
@@ -50,7 +76,7 @@ const BookCard = ({ resource, onViewBook }: BookCardProps) => {
             onClick={() => resource.file_url && onViewBook?.(resource)}
             style={{ cursor: resource.file_url ? 'pointer' : 'default' }}
         >
-            <div className="book-cover-container">
+            <div className="book-cover-container" style={{ position: 'relative' }}>
                 <img
                     src={resource.cover_image_url || placeholderImage}
                     alt={resource.title}
@@ -59,6 +85,23 @@ const BookCard = ({ resource, onViewBook }: BookCardProps) => {
                         (e.target as HTMLImageElement).src = placeholderImage;
                     }}
                 />
+                {resource.media_type === 'video' && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        background: 'rgba(0,0,0,0.6)',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}>
+                        <i className="fa fa-play" style={{ color: 'white', fontSize: '16px', marginLeft: '3px' }}></i>
+                    </div>
+                )}
             </div>
             <h3 className="book-title truncate" title={resource.title}>{resource.title}</h3>
             <p className="book-author truncate" title={resource.author_name}>{resource.author_name}</p>
@@ -67,48 +110,47 @@ const BookCard = ({ resource, onViewBook }: BookCardProps) => {
     );
 };
 
+interface CategoryBadgeProps {
+    label: string;
+    isSelected: boolean;
+    onClick: () => void;
+}
+
+const CategoryBadge = ({ label, isSelected, onClick }: CategoryBadgeProps) => {
+    return (
+        <button
+            onClick={onClick}
+            className={`
+                px-3 py-1.5 text-xs font-medium
+                transition-all duration-200 ease-in-out
+                ${isSelected
+                    ? 'text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                }
+            `}
+            style={{
+                borderRadius: '9999px',
+                ...(isSelected && { backgroundColor: '#005198' })
+            }}
+            onMouseEnter={(e) => {
+                if (isSelected) {
+                    (e.target as HTMLButtonElement).style.backgroundColor = '#003d75';
+                }
+            }}
+            onMouseLeave={(e) => {
+                if (isSelected) {
+                    (e.target as HTMLButtonElement).style.backgroundColor = '#005198';
+                }
+            }}
+        >
+            {label}
+        </button>
+    );
+};
+
 interface HorizontalScrollContainerProps {
     children: preact.ComponentChildren;
 }
-
-interface CategoryWithChildren extends Category {
-    children: CategoryWithChildren[];
-}
-
-/**
- * Build a hierarchical category tree from flat array
- */
-const buildCategoryHierarchy = (categories: Category[]): CategoryWithChildren[] => {
-    const categoryMap = new Map<number, CategoryWithChildren>();
-    const rootCategories: CategoryWithChildren[] = [];
-
-    // First pass: create all category nodes (ensure IDs are numbers)
-    categories.forEach(cat => {
-        const catId = typeof cat.id === 'number' ? cat.id : parseInt(cat.id as string);
-        const parentId = cat.parent_category_id ? (typeof cat.parent_category_id === 'number' ? cat.parent_category_id : parseInt(cat.parent_category_id as string)) : null;
-        categoryMap.set(catId, { ...cat, id: catId, parent_category_id: parentId, children: [] });
-    });
-
-    // Second pass: build hierarchy
-    categoryMap.forEach((categoryNode, catId) => {
-        if (categoryNode.parent_category_id && categoryMap.has(categoryNode.parent_category_id)) {
-            // Add to parent's children
-            categoryMap.get(categoryNode.parent_category_id)!.children.push(categoryNode);
-        } else {
-            // This is a root category
-            rootCategories.push(categoryNode);
-        }
-    });
-
-    // Sort categories alphabetically at each level
-    const sortCategories = (cats: CategoryWithChildren[]) => {
-        cats.sort((a, b) => a.category_name.localeCompare(b.category_name));
-        cats.forEach(cat => sortCategories(cat.children));
-    };
-    sortCategories(rootCategories);
-
-    return rootCategories;
-};
 
 const HorizontalScrollContainer = ({ children }: HorizontalScrollContainerProps) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -189,18 +231,103 @@ export default function LibraryHome({
     initialCategories
 }: LibraryHomeProps) {
     const [resources, setResources] = useState<Resource[]>(initialResources);
-    const [searchQuery, setSearchQuery] = useState('');
     const [viewingResource, setViewingResource] = useState<Resource | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
-    // Filter state
-    const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null);
-    const [selectedSublevelId, setSelectedSublevelId] = useState<number | null>(null);
-    const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
-    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+    // Track selected category per class (classId -> categoryId | 'all')
+    const [selectedCategoryPerClass, setSelectedCategoryPerClass] = useState<Map<number, number | 'all'>>(new Map());
+
+    // Read search query from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const [searchQuery, setSearchQuery] = useState(urlParams.get('q') || '');
+
+    // Read filter state from URL params (for display purposes in dropdowns)
+    const selectedLevelId = urlParams.get('level_id') ? parseInt(urlParams.get('level_id')!) : null;
+    const selectedSublevelId = urlParams.get('sublevel_id') ? parseInt(urlParams.get('sublevel_id')!) : null;
+    const selectedClassId = urlParams.get('class_id') ? parseInt(urlParams.get('class_id')!) : null;
+    const selectedCategoryId = urlParams.get('category_id') ? parseInt(urlParams.get('category_id')!) : null;
+
+    // Determine active page based on current URL path
+    const currentPath = window.location.pathname;
+    const activePage = currentPath.includes('/reading-materials.php') ? 'reading-materials' : 'home';
+
+    // Debounced search effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const performSearch = async () => {
+                setIsSearching(true);
+                try {
+                    const filteredResources = await ResourceService.getAll({
+                        searchQuery: searchQuery,
+                        levelId: selectedLevelId || undefined,
+                        sublevelId: selectedSublevelId || undefined,
+                        classId: selectedClassId || undefined,
+                        categoryId: selectedCategoryId || undefined,
+                        pageContext: activePage,
+                    });
+                    setResources(filteredResources);
+
+                    // Update URL without reload (for shareable URLs)
+                    const url = new URL(window.location.href);
+                    if (searchQuery) {
+                        url.searchParams.set('q', searchQuery);
+                    } else {
+                        url.searchParams.delete('q');
+                    }
+                    window.history.replaceState({}, '', url);
+                } catch (error) {
+                    console.error('Search failed:', error);
+                } finally {
+                    setIsSearching(false);
+                }
+            };
+
+            performSearch();
+        }, 500); // 500ms debounce delay
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId, activePage]);
+
+    // Restore focus after search completes
+    useEffect(() => {
+        if (!isSearching && searchInputRef.current && document.activeElement !== searchInputRef.current) {
+            // Only restore if we just finished searching
+            searchInputRef.current.focus();
+        }
+    }, [isSearching]);
 
     // Menu items
-    const libraryMenuItems = getLibraryMenuItems('home');
-    const adminMenuItems = getAdminMenuItems('');
+    const libraryMenuItems = getLibraryMenuItems(activePage);
+
+    // Check if user is admin (from PHP)
+    const rootElement = document.getElementById('library-home-root');
+    const isAdmin = rootElement?.dataset.isAdmin === '1';
+    const adminMenuItems = isAdmin ? getAdminMenuItems('') : [];
+
+    // Helper function to navigate with URL params
+    const navigateWithFilters = (params: {
+        level_id?: string | null;
+        sublevel_id?: string | null;
+        class_id?: string | null;
+        category_id?: string | null;
+        q?: string | null;
+    }) => {
+        const url = new URL(window.location.href);
+        const searchParams = url.searchParams;
+
+        // Update or remove each param
+        Object.entries(params).forEach(([key, value]) => {
+            if (value) {
+                searchParams.set(key, value);
+            } else {
+                searchParams.delete(key);
+            }
+        });
+
+        // Navigate to new URL (this will reload the page with new filters)
+        window.location.href = url.pathname + url.search;
+    };
 
     // Filter sublevels based on selected level
     const filteredSublevels = useMemo(() => {
@@ -220,60 +347,62 @@ export default function LibraryHome({
         return initialClasses.filter(c => parseInt(c.sublevel_id as any) === selectedSublevelId);
     }, [selectedLevelId, selectedSublevelId, initialClasses]);
 
-    // Handle level change - reset sublevel and class
+    // Handle level change - navigate with new URL params
     const handleLevelChange = (levelId: number | null) => {
-        setSelectedLevelId(levelId);
-        setSelectedSublevelId(null);
-        setSelectedClassId(null);
+        navigateWithFilters({
+            level_id: levelId ? String(levelId) : null,
+            sublevel_id: null,
+            class_id: null,
+            category_id: selectedCategoryId ? String(selectedCategoryId) : null,
+            q: searchQuery || null
+        });
     };
 
-    // Handle sublevel change - reset class
+    // Handle sublevel change - navigate with new URL params
     const handleSublevelChange = (sublevelId: number | null) => {
-        setSelectedSublevelId(sublevelId);
-        setSelectedClassId(null);
+        navigateWithFilters({
+            level_id: selectedLevelId ? String(selectedLevelId) : null,
+            sublevel_id: sublevelId ? String(sublevelId) : null,
+            class_id: null,
+            category_id: selectedCategoryId ? String(selectedCategoryId) : null,
+            q: searchQuery || null
+        });
     };
 
-    // Filter resources based on all filters
-    const filteredResources = useMemo(() => {
-        let filtered = resources;
+    // Handle class change - navigate with new URL params
+    const handleClassChange = (classId: number | null) => {
+        navigateWithFilters({
+            level_id: selectedLevelId ? String(selectedLevelId) : null,
+            sublevel_id: selectedSublevelId ? String(selectedSublevelId) : null,
+            class_id: classId ? String(classId) : null,
+            category_id: selectedCategoryId ? String(selectedCategoryId) : null,
+            q: searchQuery || null
+        });
+    };
 
-        // Search filter
-        if (searchQuery) {
-            filtered = filtered.filter(r =>
-                r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                r.author_name?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
+    // Handle category change - navigate with new URL params
+    const handleCategoryChange = (categoryId: number | null) => {
+        navigateWithFilters({
+            level_id: selectedLevelId ? String(selectedLevelId) : null,
+            sublevel_id: selectedSublevelId ? String(selectedSublevelId) : null,
+            class_id: selectedClassId ? String(selectedClassId) : null,
+            category_id: categoryId ? String(categoryId) : null,
+            q: searchQuery || null
+        });
+    };
 
-        // Class filter
-        if (selectedClassId) {
-            filtered = filtered.filter(r =>
-                r.class_ids && r.class_ids.map(id => parseInt(id as any)).includes(selectedClassId)
-            );
-        } else if (selectedSublevelId) {
-            // If sublevel is selected but not class, show all resources for classes in that sublevel
-            const sublevelClassIds = filteredClasses.map(c => parseInt(c.id as any));
-            filtered = filtered.filter(r =>
-                r.class_ids && r.class_ids.map(id => parseInt(id as any)).some(id => sublevelClassIds.includes(id))
-            );
-        } else if (selectedLevelId) {
-            // If only level is selected, show all resources for classes in that level
-            const levelClasses = initialClasses.filter(c => parseInt(c.level_id as any) === selectedLevelId);
-            const levelClassIds = levelClasses.map(c => parseInt(c.id as any));
-            filtered = filtered.filter(r =>
-                r.class_ids && r.class_ids.map(id => parseInt(id as any)).some(id => levelClassIds.includes(id))
-            );
-        }
+    // Handle search - just update the search query state (debounce will handle the rest)
+    const handleSearchInput = (value: string) => {
+        setSearchQuery(value);
+    };
 
-        // Category filter
-        if (selectedCategoryId) {
-            filtered = filtered.filter(r =>
-                r.category_ids && r.category_ids.map(id => parseInt(id as any)).includes(selectedCategoryId)
-            );
-        }
+    // Clear all filters
+    const clearAllFilters = () => {
+        window.location.href = '/local/reblibrary/index.php';
+    };
 
-        return filtered;
-    }, [resources, searchQuery, selectedLevelId, selectedSublevelId, selectedClassId, selectedCategoryId, filteredClasses, initialClasses]);
+    // Since filtering is now done on backend, filteredResources is just the resources we received
+    const filteredResources = resources;
 
     // Group resources by class
     const resourcesByClass = useMemo(() => {
@@ -317,56 +446,6 @@ export default function LibraryHome({
         });
     }, [filteredResources, filteredClasses, selectedClassId]);
 
-    // Build category hierarchy
-    const categoryHierarchy = useMemo(() => {
-        return buildCategoryHierarchy(initialCategories);
-    }, [initialCategories]);
-
-    // Group resources by class, then by category within each class
-    const resourcesByClassAndCategory = useMemo(() => {
-        return resourcesByClass.map(({ class: cls, resources: classResources }) => {
-            // Separate uncategorized resources
-            const uncategorizedResources = classResources.filter(r => !r.category_ids || r.category_ids.length === 0);
-
-            // Create a map to track which resources belong to which categories
-            const resourcesByCategoryId = new Map<number, Resource[]>();
-
-            // Distribute resources to their categories
-            classResources.forEach(resource => {
-                if (resource.category_ids && resource.category_ids.length > 0) {
-                    resource.category_ids.forEach(categoryId => {
-                        const catId = parseInt(categoryId as any);
-                        if (!resourcesByCategoryId.has(catId)) {
-                            resourcesByCategoryId.set(catId, []);
-                        }
-                        resourcesByCategoryId.get(catId)!.push(resource);
-                    });
-                }
-            });
-
-            // Build category rows in hierarchical order
-            const categorySections: Array<{ category: CategoryWithChildren; resources: Resource[]; depth: number }> = [];
-
-            const processCategory = (category: CategoryWithChildren, depth: number) => {
-                const categoryResources = resourcesByCategoryId.get(category.id) || [];
-                if (categoryResources.length > 0) {
-                    categorySections.push({ category, resources: categoryResources, depth });
-                }
-                // Process children recursively
-                category.children.forEach(child => processCategory(child, depth + 1));
-            };
-
-            // Process all root categories
-            categoryHierarchy.forEach(rootCat => processCategory(rootCat, 0));
-
-            return {
-                class: cls,
-                uncategorizedResources,
-                categorySections
-            };
-        });
-    }, [resourcesByClass, categoryHierarchy]);
-
     // Get unassigned resources (resources with no class assignments)
     const unassignedResources = useMemo(() => {
         return filteredResources.filter(r => !r.class_ids || r.class_ids.length === 0);
@@ -374,14 +453,27 @@ export default function LibraryHome({
 
     return (
         <div className="flex h-screen bg-white overflow-hidden">
-            <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
+            <Sidebar
+                adminMenuItems={adminMenuItems}
+                libraryMenuItems={libraryMenuItems}
+                levels={initialLevels}
+                sublevels={initialSublevels}
+                classes={initialClasses}
+            />
 
             <main className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
                 {viewingResource ? (
-                    <PDFReader
-                        resource={viewingResource}
-                        onClose={() => setViewingResource(null)}
-                    />
+                    viewingResource.media_type === 'video' ? (
+                        <VideoPlayer
+                            resource={viewingResource}
+                            onClose={() => setViewingResource(null)}
+                        />
+                    ) : (
+                        <PDFReader
+                            resource={viewingResource}
+                            onClose={() => setViewingResource(null)}
+                        />
+                    )
                 ) : (
                 <>
                     {/* Fixed Header: Search Bar and Filters */}
@@ -390,20 +482,42 @@ export default function LibraryHome({
                         <div className="max-w-4xl mx-auto">
                             {/* Search Bar */}
                             <div className="mb-3">
-                                <div className="library-search">
-                                    <i className="fa fa-search search-icon"></i>
+                                <div className="library-search relative">
+                                    <i className={`fa ${isSearching ? 'fa-spinner fa-spin' : 'fa-search'} search-icon`}></i>
                                     <input
+                                        ref={searchInputRef}
                                         type="text"
                                         placeholder="Search books by title or author..."
                                         value={searchQuery}
-                                        onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+                                        onInput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
                                         className="search-input"
                                     />
+                                    {isSearching && (
+                                        <span className="absolute right-4 top-1/2 text-sm text-gray-500" style={{ transform: 'translateY(-50%)' }}>
+                                            Searching...
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Filter Bar */}
                             <div className="flex flex-wrap gap-3 justify-center">
+                            {/* Category Filter */}
+                            <div className="inline-block">
+                                <select
+                                    value={selectedCategoryId || ''}
+                                    onChange={(e) => handleCategoryChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
+                                >
+                                    <option value="">Courses and categories</option>
+                                    {initialCategories.map(category => (
+                                        <option key={category.id} value={String(category.id)}>
+                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             {/* Level Filter */}
                             <div className="inline-block">
                                 <select
@@ -441,7 +555,7 @@ export default function LibraryHome({
                             <div className="inline-block">
                                 <select
                                     value={selectedClassId || ''}
-                                    onChange={(e) => setSelectedClassId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
+                                    onChange={(e) => handleClassChange(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
                                     className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
                                 >
                                     <option value="">All Classes</option>
@@ -453,34 +567,11 @@ export default function LibraryHome({
                                 </select>
                             </div>
 
-                            {/* Category Filter */}
-                            <div className="inline-block">
-                                <select
-                                    value={selectedCategoryId || ''}
-                                    onChange={(e) => setSelectedCategoryId(e.currentTarget.value ? parseInt(e.currentTarget.value) : null)}
-                                    className="px-4 py-2.5 bg-white border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all"
-                                >
-                                    <option value="">All Categories</option>
-                                    {initialCategories.map(category => (
-                                        <option key={category.id} value={String(category.id)}>
-                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
                             {/* Clear Filters Button */}
                             {(selectedLevelId || selectedSublevelId || selectedClassId || selectedCategoryId || searchQuery) && (
                                 <button
-                                    onClick={() => {
-                                        setSelectedLevelId(null);
-                                        setSelectedSublevelId(null);
-                                        setSelectedClassId(null);
-                                        setSelectedCategoryId(null);
-                                        setSearchQuery('');
-                                    }}
-                                    style={{ borderRadius: '9999px' }}
-                                    className="px-4 py-2.5 bg-red-50 border-2 border-red-400 text-sm font-medium text-red-700 hover:bg-red-100 hover:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                                    onClick={clearAllFilters}
+                                    className="px-4 py-2.5 bg-gray-100 border-2 border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
                                 >
                                     <i className="fa fa-times mr-1"></i>
                                     Clear All
@@ -492,60 +583,92 @@ export default function LibraryHome({
 
                     {/* Scrollable Content: Books List */}
                     <div className="flex-1 overflow-y-auto px-8 pb-8">
-                        {/* Main Content Area - Class-based Sections with Category Rows */}
-                        {resourcesByClassAndCategory.length > 0 ? (
-                            resourcesByClassAndCategory.map(({ class: cls, uncategorizedResources, categorySections }) => (
-                                (uncategorizedResources.length > 0 || categorySections.length > 0) && (
+                        {/* Main Content Area - Class-based Sections */}
+                        {resourcesByClass.length > 0 ? (
+                            resourcesByClass.map(({ class: cls, resources: classResources }) => {
+                                // Get unique categories for resources in this class
+                                const categories = getCategoriesForResources(classResources, initialCategories);
+                                const classIdNum = parseInt(cls.id as any);
+
+                                // Get or initialize selected category for this class
+                                const selectedCategory = selectedCategoryPerClass.get(classIdNum) || 'all';
+
+                                // Filter resources based on selected category
+                                const filteredClassResources = selectedCategory === 'all'
+                                    ? classResources
+                                    : classResources.filter(resource =>
+                                        resource.category_ids && resource.category_ids.some(
+                                            catId => parseInt(catId as any) === selectedCategory
+                                        )
+                                    );
+
+                                // Handler to update selected category for this class
+                                const handleCategorySelect = (categoryId: number | 'all') => {
+                                    setSelectedCategoryPerClass(prev => {
+                                        const newMap = new Map(prev);
+                                        newMap.set(classIdNum, categoryId);
+                                        return newMap;
+                                    });
+                                };
+
+                                return classResources.length > 0 && (
                                     <section key={cls.id} className="library-section">
-                                        {/* Class Header */}
-                                        <div className="mb-4">
-                                            <h2 className="section-title text-2xl font-bold text-gray-900">
+                                        <div className="mb-3">
+                                            <h2 className="section-title text-2xl font-bold text-gray-900 mb-2">
                                                 {cls.class_name}
                                             </h2>
-                                            <p className="text-sm text-gray-600 mt-0.5">
-                                                {cls.level_name} → {cls.sublevel_name}
-                                            </p>
+
+                                            {/* Category badges */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {/* Show "All" badge if there are multiple categories or at least one category */}
+                                                {categories.length > 0 && (
+                                                    <CategoryBadge
+                                                        label="All"
+                                                        isSelected={selectedCategory === 'all'}
+                                                        onClick={() => handleCategorySelect('all')}
+                                                    />
+                                                )}
+
+                                                {/* Show individual category badges */}
+                                                {categories.map(category => (
+                                                    <CategoryBadge
+                                                        key={category.id}
+                                                        label={category.parent_name
+                                                            ? `${category.parent_name} > ${category.category_name}`
+                                                            : category.category_name
+                                                        }
+                                                        isSelected={selectedCategory === parseInt(category.id as any)}
+                                                        onClick={() => handleCategorySelect(parseInt(category.id as any))}
+                                                    />
+                                                ))}
+
+                                                {/* Show "Uncategorized" if no categories */}
+                                                {categories.length === 0 && (
+                                                    <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                                        Uncategorized
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        {/* Uncategorized Resources First */}
-                                        {uncategorizedResources.length > 0 && (
-                                            <div className="mb-6">
-                                                <h3 className="font-semibold text-gray-700 mb-2" style={{ fontSize: '14px' }}>
-                                                    Uncategorized
-                                                </h3>
-                                                <HorizontalScrollContainer>
-                                                    <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
-                                                        {uncategorizedResources.map(resource => (
-                                                            <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
-                                                                <BookCard resource={resource} onViewBook={setViewingResource} />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </HorizontalScrollContainer>
+                                        {filteredClassResources.length > 0 ? (
+                                            <HorizontalScrollContainer>
+                                                <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                                                    {filteredClassResources.map(resource => (
+                                                        <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
+                                                            <BookCard resource={resource} onViewBook={setViewingResource} />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </HorizontalScrollContainer>
+                                        ) : (
+                                            <div className="py-8 text-center text-gray-500">
+                                                <p className="text-sm">No resources in this category</p>
                                             </div>
                                         )}
-
-                                        {/* Category Sections in Hierarchical Order */}
-                                        {categorySections.map(({ category, resources: categoryResources, depth }) => (
-                                            <div key={category.id} className="mb-6" style={{ marginLeft: `${depth * 24}px` }}>
-                                                <h3 className="font-semibold text-gray-700 mb-2" style={{ fontSize: '14px' }}>
-                                                    {depth > 0 && <span className="text-gray-400 mr-2">{'└─'.repeat(1)}</span>}
-                                                    {category.category_name}
-                                                </h3>
-                                                <HorizontalScrollContainer>
-                                                    <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
-                                                        {categoryResources.map(resource => (
-                                                            <div key={resource.id} className="flex-shrink-0" style={{ width: '160px' }}>
-                                                                <BookCard resource={resource} onViewBook={setViewingResource} />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </HorizontalScrollContainer>
-                                            </div>
-                                        ))}
                                     </section>
-                                )
-                            ))
+                                );
+                            })
                         ) : unassignedResources.length > 0 ? (
                             <section className="library-section">
                                 <h2 className="section-title">Unassigned Resources</h2>
@@ -564,15 +687,8 @@ export default function LibraryHome({
                                 <i className="fa fa-book text-6xl text-gray-300 mb-4"></i>
                                 <p>No books found matching your filters.</p>
                                 <button
-                                    onClick={() => {
-                                        setSelectedLevelId(null);
-                                        setSelectedSublevelId(null);
-                                        setSelectedClassId(null);
-                                        setSelectedCategoryId(null);
-                                        setSearchQuery('');
-                                    }}
-                                    style={{ borderRadius: '9999px' }}
-                                    className="mt-4 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700"
+                                    onClick={clearAllFilters}
+                                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                                 >
                                     Clear Filters
                                 </button>

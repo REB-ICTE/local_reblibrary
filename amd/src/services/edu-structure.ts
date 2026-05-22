@@ -17,12 +17,14 @@ declare const require: any;
 export interface EduLevel {
     id: number;
     level_name: string;
+    sortorder: number;
 }
 
 export interface EduSublevel {
     id: number;
     sublevel_name: string;
     level_id: number;
+    sortorder: number;
 }
 
 export interface EduClass {
@@ -30,6 +32,7 @@ export interface EduClass {
     class_name: string;
     class_code: string;
     sublevel_id: number;
+    sortorder: number;
 }
 
 export interface EduSection {
@@ -37,6 +40,31 @@ export interface EduSection {
     section_name: string;
     section_code: string;
     sublevel_id: number;
+    sortorder: number;
+}
+
+export interface ReorderItem {
+    id: number;
+    sortorder: number;
+}
+
+export interface ReorderResult {
+    success: boolean;
+    updated: number;
+}
+
+// Shared helper that wraps an AJAX call to one of the reorder web services.
+function callReorder(methodname: string, items: ReorderItem[]): Promise<ReorderResult> {
+    return new Promise((resolve, reject) => {
+        require(['core/ajax'], (ajax: any) => {
+            ajax.call([{
+                methodname,
+                args: { items }
+            }])[0]
+                .then((result: ReorderResult) => resolve(result))
+                .catch((error: any) => reject(error));
+        });
+    });
 }
 
 export interface CreateLevelData {
@@ -132,6 +160,13 @@ export const LevelService = {
                     .catch((error: any) => reject(error));
             });
         });
+    },
+
+    /**
+     * Persist a new sort order for education levels.
+     */
+    reorder: (items: ReorderItem[]): Promise<ReorderResult> => {
+        return callReorder('local_reblibrary_reorder_levels', items);
     }
 };
 
@@ -209,6 +244,13 @@ export const SublevelService = {
                     .catch((error: any) => reject(error));
             });
         });
+    },
+
+    /**
+     * Persist a new sort order for sublevels. Sortorder is scoped per parent level on the server.
+     */
+    reorder: (items: ReorderItem[]): Promise<ReorderResult> => {
+        return callReorder('local_reblibrary_reorder_sublevels', items);
     }
 };
 
@@ -288,6 +330,13 @@ export const ClassService = {
                     .catch((error: any) => reject(error));
             });
         });
+    },
+
+    /**
+     * Persist a new sort order for classes. Sortorder is scoped per parent sublevel on the server.
+     */
+    reorder: (items: ReorderItem[]): Promise<ReorderResult> => {
+        return callReorder('local_reblibrary_reorder_classes', items);
     }
 };
 
@@ -367,5 +416,12 @@ export const SectionService = {
                     .catch((error: any) => reject(error));
             });
         });
+    },
+
+    /**
+     * Persist a new sort order for sections. Sortorder is scoped per parent sublevel on the server.
+     */
+    reorder: (items: ReorderItem[]): Promise<ReorderResult> => {
+        return callReorder('local_reblibrary_reorder_sections', items);
     }
 };

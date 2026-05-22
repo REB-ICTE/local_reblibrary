@@ -243,6 +243,47 @@ $functions = [
         'capabilities' => 'moodle/site:config',
     ],
 
+    // Education structure reorder (drag-and-drop) endpoints.
+    'local_reblibrary_reorder_levels' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'reorder_levels',
+        'classpath' => '',
+        'description' => 'Persist a new sort order for education levels',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_reorder_sublevels' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'reorder_sublevels',
+        'classpath' => '',
+        'description' => 'Persist a new sort order for education sublevels',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_reorder_classes' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'reorder_classes',
+        'classpath' => '',
+        'description' => 'Persist a new sort order for classes',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_reorder_sections' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'reorder_sections',
+        'classpath' => '',
+        'description' => 'Persist a new sort order for sections',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
     // Categories web services.
     'local_reblibrary_create_category' => [
         'classname' => 'local_reblibrary\external\categories',
@@ -326,12 +367,12 @@ $functions = [
     ],
 
     // S3 upload web services.
-    'local_reblibrary_generate_upload_urls' => [
-        'classname' => 'local_reblibrary\external\generate_upload_urls',
+    'local_reblibrary_upload_resource_file' => [
+        'classname' => 'local_reblibrary\external\upload_resource_file',
         'methodname' => 'execute',
         'classpath' => '',
-        'description' => 'Generate presigned upload URLs for S3-compatible storage',
-        'type' => 'read',
+        'description' => 'Upload resource file (PDF + cover) to S3-compatible storage',
+        'type' => 'write',
         'ajax' => true,
         'capabilities' => 'local/reblibrary:manageresources',
     ],
@@ -413,6 +454,78 @@ $functions = [
         'methodname' => 'assign_categories',
         'classpath' => '',
         'description' => 'Assign categories to a resource',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:manageresources',
+    ],
+
+    // Labels web services.
+    'local_reblibrary_get_all_labels' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'get_all',
+        'classpath' => '',
+        'description' => 'Get all labels',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_get_label_by_id' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'get_by_id',
+        'classpath' => '',
+        'description' => 'Get label by ID',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_create_label' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'create',
+        'classpath' => '',
+        'description' => 'Create a new label',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_update_label' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'update',
+        'classpath' => '',
+        'description' => 'Update a label',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_delete_label' => [
+        'classname' => 'local_reblibrary\external\labels',
+        'methodname' => 'delete',
+        'classpath' => '',
+        'description' => 'Delete a label',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    // Resource label assignment web services.
+    'local_reblibrary_get_resource_labels' => [
+        'classname' => 'local_reblibrary\external\resource_labels',
+        'methodname' => 'get_resource_labels',
+        'classpath' => '',
+        'description' => 'Get labels assigned to a resource',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'local/reblibrary:view',
+    ],
+
+    'local_reblibrary_assign_labels' => [
+        'classname' => 'local_reblibrary\external\resource_labels',
+        'methodname' => 'assign_labels',
+        'classpath' => '',
+        'description' => 'Assign labels to a resource',
         'type' => 'write',
         'ajax' => true,
         'capabilities' => 'local/reblibrary:manageresources',

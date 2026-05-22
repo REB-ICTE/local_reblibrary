@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'REB Library';
+$string['pluginname'] = 'Library';
 
 // Header strings.
 $string['header_logo'] = 'library.';
@@ -78,6 +78,11 @@ $string['collectionpage_title'] = 'My Collection';
 $string['collectionpage_heading'] = 'My Collection';
 $string['collectionpage_description'] = 'View your saved resources and bookmarks.';
 
+// Reading Materials page strings.
+$string['readingmaterialspage_title'] = 'Reading Materials';
+$string['readingmaterialspage_heading'] = 'Reading Materials';
+$string['readingmaterialspage_description'] = 'Explore reading materials tailored for your learning journey.';
+
 // Admin page strings.
 $string['adminpage_title'] = 'Library Administration';
 $string['adminpage_heading'] = 'REB Library Administration';
@@ -89,6 +94,7 @@ $string['nav_home'] = 'Home';
 $string['nav_browse'] = 'Browse';
 $string['nav_search'] = 'Search';
 $string['nav_collection'] = 'My Collection';
+$string['nav_reading_materials'] = 'Reading Materials';
 $string['nav_admin'] = 'Library Admin';
 
 // Admin navigation strings.
@@ -96,7 +102,7 @@ $string['admin_menu_heading'] = 'ADMINISTRATION';
 $string['admin_nav_dashboard'] = 'Dashboard';
 $string['admin_nav_education'] = 'Education Structure';
 $string['admin_nav_resources'] = 'Resources & Authors';
-$string['admin_nav_categories'] = 'Categories';
+$string['admin_nav_categories'] = 'Labels & Categories';
 $string['admin_nav_assignments'] = 'Assignments';
 
 // Education levels CRUD.
@@ -126,14 +132,28 @@ $string['error_duplicate_class_name'] = 'A class with this name already exists';
 $string['error_duplicate_class_code'] = 'A class with this code already exists';
 $string['error_duplicate_section_code'] = 'A section with this code already exists';
 
-// Categories page.
-$string['categories_page_title'] = 'Categories Management';
-$string['categories_page_heading'] = 'Resource Categories Management';
+// Categories & Labels page.
+$string['categories_page_title'] = 'Labels & Categories Management';
+$string['categories_page_heading'] = 'Labels & Categories Management';
+
+// Categories & Labels tabs.
+$string['tab_categories'] = 'Categories';
+$string['tab_labels'] = 'Labels';
 
 // Categories error messages.
 $string['invalidparentcategory'] = 'The parent category does not exist';
 $string['cannotbeparentofself'] = 'A category cannot be its own parent';
 $string['categoryhaschildren'] = 'Cannot delete category that has subcategories';
+
+// Labels tab.
+$string['add_label'] = 'Add Label';
+$string['edit_label'] = 'Edit Label';
+$string['delete_label'] = 'Delete Label';
+$string['label_name'] = 'Label Name';
+$string['label_description'] = 'Description';
+$string['confirm_delete_label'] = 'Are you sure you want to delete the label "{$a}"?';
+$string['no_labels'] = 'No labels found. Click "Add Label" to create one.';
+$string['invalidlabelid'] = 'The label does not exist';
 
 // Resources page.
 $string['resources_page_title'] = 'Resources & Authors Management';
@@ -201,3 +221,25 @@ $string['s3presignedfailed'] = 'Failed to generate presigned URL';
 $string['s3aclfailed'] = 'Failed to set object ACL';
 $string['s3deletefailed'] = 'Failed to delete object from S3 storage';
 $string['s3uploaderror'] = 'S3 upload error';
+
+// File download errors.
+$string['invalidfilekey'] = 'Invalid file key';
+$string['filenotfound'] = 'File not found';
+$string['downloaderror'] = 'Error downloading file';
+$string['uploadfailed'] = 'File upload failed';
+
+// Home page filtering settings.
+$string['homepagefiltering'] = 'Home Page Filtering';
+$string['homepagefiltering_desc'] = 'Control which resources appear on the public library home page based on labels';
+$string['homepageincludelabels'] = 'Include Labels';
+$string['homepageincludelabels_desc'] = 'Show only resources with these labels on the home page. If empty, all resources are shown (subject to exclude filter).';
+$string['homepageexcludelabels'] = 'Exclude Labels';
+$string['homepageexcludelabels_desc'] = 'Hide resources with these labels from the home page. Exclude takes precedence over include.';
+
+// Reading Materials page filtering settings.
+$string['readingmaterialsfiltering'] = 'Reading Materials Page Filtering';
+$string['readingmaterialsfiltering_desc'] = 'Control which resources appear on the Reading Materials page based on labels';
+$string['readingmaterialsincludelabels'] = 'Include Labels';
+$string['readingmaterialsincludelabels_desc'] = 'Show only resources with these labels on the Reading Materials page. If empty, all resources are shown (subject to exclude filter).';
+$string['readingmaterialsexcludelabels'] = 'Exclude Labels';
+$string['readingmaterialsexcludelabels_desc'] = 'Hide resources with these labels from the Reading Materials page. Exclude takes precedence over include.';

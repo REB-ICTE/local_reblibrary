@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import { SectionService } from "../../services/edu-structure";
 import type { EduSection, CreateSectionData } from "../../services/edu-structure";
 import { sublevelsSignal, sectionsSignal, loadingSignal, errorSignal, successSignal } from "./EdStructure";
+import { useDragSort } from "../shared/useDragSort";
 
 export default function SectionTab() {
     const [showForm, setShowForm] = useState(false);
@@ -66,10 +67,9 @@ export default function SectionTab() {
                 );
                 successSignal.value = 'Section updated successfully';
             } else {
+                // Create — server assigns next sortorder within its parent sublevel.
                 const created = await SectionService.create(formData);
-                sectionsSignal.value = [...sectionsSignal.value, created].sort((a, b) =>
-                    a.section_code.localeCompare(b.section_code)
-                );
+                sectionsSignal.value = [...sectionsSignal.value, created];
                 successSignal.value = 'Section created successfully';
             }
             handleCancel();
@@ -103,6 +103,45 @@ export default function SectionTab() {
     const getSublevelName = (sublevelId: number) => {
         return sublevelsSignal.value.find(s => s.id === sublevelId)?.sublevel_name || `ID: ${sublevelId}`;
     };
+
+    // Drag-and-drop reorder — scoped per parent sublevel.
+    const commitReorder = async (newOrder: EduSection[]) => {
+        const previous = sectionsSignal.value;
+
+        const groups = new Map<number, EduSection[]>();
+        for (const s of newOrder) {
+            const g = groups.get(s.sublevel_id) ?? [];
+            g.push(s);
+            groups.set(s.sublevel_id, g);
+        }
+        const restamped: EduSection[] = [];
+        const dirty: { id: number; sortorder: number }[] = [];
+        for (const [, group] of groups) {
+            group.forEach((item, i) => {
+                const so = i + 1;
+                if (item.sortorder !== so) {
+                    dirty.push({ id: item.id, sortorder: so });
+                }
+                restamped.push({ ...item, sortorder: so });
+            });
+        }
+
+        sectionsSignal.value = restamped;
+        if (dirty.length === 0) return;
+
+        try {
+            await SectionService.reorder(dirty);
+            successSignal.value = 'Order updated';
+        } catch (error: any) {
+            sectionsSignal.value = previous;
+            errorSignal.value = error.message || 'Failed to save new order';
+        }
+    };
+
+    const dnd = useDragSort<EduSection>(sectionsSignal.value, {
+        getGroupKey: (s) => s.sublevel_id,
+        onCommit: commitReorder,
+    });
 
     return (
         <div className="p-6">
@@ -233,9 +272,14 @@ export default function SectionTab() {
                     {/* Table View */}
                     {sectionsSignal.value.length > 0 ? (
                         <div className="overflow-x-auto">
+                            <p className="text-xs text-gray-500 mb-2">
+                                <i className="fa fa-info-circle mr-1"></i>
+                                Drag rows within the same parent sublevel to reorder.
+                            </p>
                             <table className="w-full border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-200">
+                                        <th className="w-8 py-3 px-2"></th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Section Name</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Section Code</th>
@@ -244,8 +288,29 @@ export default function SectionTab() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sectionsSignal.value.map((section) => (
-                                        <tr key={section.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                    {sectionsSignal.value.map((section, index) => {
+                                        const rowProps = dnd.rowProps(index);
+                                        const handleProps = dnd.handleProps(index);
+                                        return (
+                                        <tr
+                                            key={section.id}
+                                            draggable={rowProps.draggable}
+                                            onDragOver={rowProps.onDragOver}
+                                            onDragLeave={rowProps.onDragLeave}
+                                            onDrop={rowProps.onDrop}
+                                            onDragEnd={rowProps.onDragEnd}
+                                            className={`border-b border-gray-200 hover:bg-gray-50 ${rowProps.className}`}
+                                        >
+                                            <td
+                                                draggable
+                                                onDragStart={handleProps.onDragStart}
+                                                onMouseDown={handleProps.onMouseDown}
+                                                onMouseUp={handleProps.onMouseUp}
+                                                className={`py-3 px-2 text-center ${handleProps.className}`}
+                                                title="Drag to reorder (within the same parent sublevel)"
+                                            >
+                                                <i className="fa fa-grip-vertical"></i>
+                                            </td>
                                             <td className="py-3 px-4 text-gray-600">{section.id}</td>
                                             <td className="py-3 px-4 text-gray-900 font-medium">{section.section_name}</td>
                                             <td className="py-3 px-4">
@@ -273,7 +338,8 @@ export default function SectionTab() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

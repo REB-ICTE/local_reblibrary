@@ -6,12 +6,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-export interface MenuItem {
-    name: string;
-    url: string;
-    icon: string;
-    active?: boolean;
-}
+import type { MenuItem } from '../types';
 
 /**
  * Get admin menu items.
@@ -39,7 +34,7 @@ export function getAdminMenuItems(activePage: string = ''): MenuItem[] {
             active: activePage === 'resources'
         },
         {
-            name: "Categories",
+            name: "Labels & Categories",
             url: "/local/reblibrary/admin/categories.php",
             icon: "fa fa-tags",
             active: activePage === 'categories'

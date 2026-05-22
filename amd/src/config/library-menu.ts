@@ -6,12 +6,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-export interface MenuItem {
-    name: string;
-    url: string;
-    icon: string;
-    active?: boolean;
-}
+import type { MenuItem } from '../types';
 
 /**
  * Get library menu items.
@@ -21,22 +16,18 @@ export interface MenuItem {
 export function getLibraryMenuItems(activePage: string = ''): MenuItem[] {
     return [
         {
-            name: "Library Home",
+            name: "Resources",
             url: "/local/reblibrary/index.php",
-            icon: "fa fa-home",
-            active: activePage === 'home'
+            icon: "fa fa-book-open",
+            active: activePage === 'home',
+            children: [] // Will be populated with education structure in Sidebar component
         },
         {
-            name: "Browse",
-            url: "/local/reblibrary/browse.php",
-            icon: "fa fa-compass",
-            active: activePage === 'browse'
-        },
-        {
-            name: "My Collection",
-            url: "/local/reblibrary/collection.php",
-            icon: "fa fa-bookmark",
-            active: activePage === 'collection'
-        },
+            name: "Reading Materials",
+            url: "/local/reblibrary/reading-materials.php",
+            icon: "fa fa-book-reader",
+            active: activePage === 'reading-materials',
+            children: []
+        }
     ];
 }

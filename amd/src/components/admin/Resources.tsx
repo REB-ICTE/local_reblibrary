@@ -7,15 +7,24 @@ import { ResourceService, CreateResourceData, UpdateResourceData } from "../../s
 import { AuthorService, CreateAuthorData, UpdateAuthorData } from "../../services/authors";
 import { CategoryService } from "../../services/categories";
 import type { Category } from "../../services/categories";
+import { LabelService } from "../../services/labels";
+import type { Label } from "../../services/labels";
 import { getClasses, getResourceAssignments, assignToClasses } from "../../services/assignments";
 import type { Class } from "../../services/assignments";
 import { getResourceCategories, assignCategories } from "../../services/resource-categories";
+import { getResourceLabels, assignLabels } from "../../services/resource-labels";
 import Sidebar from "../shared/Sidebar";
 import Toast from "../shared/Toast";
 import { getAdminMenuItems } from "../../config/admin-menu";
 import { getLibraryMenuItems } from "../../config/library-menu";
-import { uploadResourceFiles, type UploadProgress } from "../../services/upload";
+import { uploadResourceFiles, type UploadProgress, type UploadOptions } from "../../services/upload";
 import PdfPreview from "./PdfPreview";
+
+// File type config per media type
+const FILE_TYPE_CONFIG: Record<string, { accept: string; label: string; maxSize: number; maxSizeLabel: string }> = {
+    text: { accept: 'application/pdf', label: 'PDF File', maxSize: 100 * 1024 * 1024, maxSizeLabel: '100MB' },
+    video: { accept: 'video/mp4,video/webm', label: 'Video File', maxSize: 500 * 1024 * 1024, maxSizeLabel: '500MB' },
+};
 import UploadProgressComponent from "./UploadProgress";
 
 // Signals for state management
@@ -28,27 +37,38 @@ export const successSignal = signal<string | null>(null);
 interface ResourcesProps {
     initialResources: Resource[];
     initialAuthors: Author[];
+    eduLevels?: import('../../types').EducationLevel[];
+    eduSublevels?: import('../../types').EducationSublevel[];
+    eduClasses?: import('../../types').EducationClass[];
 }
 
 type Tab = 'resources' | 'authors';
 
-export default function Resources({ initialResources, initialAuthors }: ResourcesProps) {
+export default function Resources({
+    initialResources,
+    initialAuthors,
+    eduLevels = [],
+    eduSublevels = [],
+    eduClasses = []
+}: ResourcesProps) {
     // Initialize signals with data from PHP
     useEffect(() => {
         resourcesSignal.value = initialResources;
         authorsSignal.value = initialAuthors;
     }, [initialResources, initialAuthors]);
 
-    // Load assignment data (classes, categories)
+    // Load assignment data (classes, categories, labels)
     useEffect(() => {
         const loadAssignmentData = async () => {
             try {
-                const [classesData, categoriesData] = await Promise.all([
+                const [classesData, categoriesData, labelsData] = await Promise.all([
                     getClasses(),
                     CategoryService.getAll(),
+                    LabelService.getAll(),
                 ]);
                 setClasses(classesData);
                 setCategories(categoriesData);
+                setLabels(labelsData);
             } catch (error) {
                 console.error('Failed to load assignment data:', error);
             }
@@ -73,6 +93,8 @@ export default function Resources({ initialResources, initialAuthors }: Resource
         description: '',
         cover_image_url: '',
         file_url: '',
+        visible: 1,
+        media_type: 'text',
     });
 
     const [authorFormData, setAuthorFormData] = useState<CreateAuthorData>({
@@ -82,15 +104,18 @@ export default function Resources({ initialResources, initialAuthors }: Resource
     });
 
     // File upload state
-    const [selectedPdf, setSelectedPdf] = useState<File | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedCover, setSelectedCover] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
     // Assignment data
     const [classes, setClasses] = useState<Class[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [labels, setLabels] = useState<Label[]>([]);
     const [selectedClassIds, setSelectedClassIds] = useState<number[]>([]);
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+    const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
 
     // Resource handlers
     const handleAddResource = () => {
@@ -102,9 +127,12 @@ export default function Resources({ initialResources, initialAuthors }: Resource
             description: '',
             cover_image_url: '',
             file_url: '',
+            visible: 1,
+            media_type: 'text',
         });
         setSelectedClassIds([]);
         setSelectedCategoryIds([]);
+        setSelectedLabelIds([]);
         setShowResourceForm(true);
     };
 
@@ -117,21 +145,26 @@ export default function Resources({ initialResources, initialAuthors }: Resource
             description: resource.description || '',
             cover_image_url: resource.cover_image_url || '',
             file_url: resource.file_url || '',
+            visible: resource.visible ?? 1,
+            media_type: resource.media_type || 'text',
         });
 
         // Load existing assignments
         try {
-            const [assignments, categoryAssignments] = await Promise.all([
+            const [assignments, categoryAssignments, labelAssignments] = await Promise.all([
                 getResourceAssignments(resource.id),
                 getResourceCategories(resource.id),
+                getResourceLabels(resource.id),
             ]);
             setSelectedClassIds(assignments.class_ids);
             setSelectedCategoryIds(categoryAssignments.category_ids);
+            setSelectedLabelIds(labelAssignments.label_ids);
         } catch (error) {
             console.error('Failed to load resource assignments:', error);
             // Reset to empty arrays on error
             setSelectedClassIds([]);
             setSelectedCategoryIds([]);
+            setSelectedLabelIds([]);
         }
 
         setShowResourceForm(true);
@@ -140,7 +173,8 @@ export default function Resources({ initialResources, initialAuthors }: Resource
     const handleCancelResource = () => {
         setShowResourceForm(false);
         setEditingResource(null);
-        setSelectedPdf(null);
+        setSelectedFile(null);
+        setSelectedCover(null);
         setUploadProgress(null);
     };
 
@@ -150,20 +184,51 @@ export default function Resources({ initialResources, initialAuthors }: Resource
 
         if (!file) return;
 
+        const config = FILE_TYPE_CONFIG[resourceFormData.media_type || 'text'];
+        const allowedTypes = config.accept.split(',');
+
         // Validate file type
-        if (file.type !== 'application/pdf') {
-            errorSignal.value = 'Please select a PDF file';
+        if (!allowedTypes.includes(file.type)) {
+            errorSignal.value = `Please select a valid ${config.label.toLowerCase()} (${config.accept})`;
             return;
         }
 
-        // Validate file size (max 100MB)
-        if (file.size > 100 * 1024 * 1024) {
-            errorSignal.value = 'File size must be less than 100MB';
+        // Validate file size
+        if (file.size > config.maxSize) {
+            errorSignal.value = `File size must be less than ${config.maxSizeLabel}`;
             return;
         }
 
-        setSelectedPdf(file);
+        setSelectedFile(file);
         errorSignal.value = null;
+    };
+
+    const handleCoverSelect = (e: Event) => {
+        const input = e.target as HTMLInputElement;
+        const file = input.files?.[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            errorSignal.value = 'Please select an image file for the cover';
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            errorSignal.value = 'Cover image must be less than 10MB';
+            return;
+        }
+
+        setSelectedCover(file);
+        errorSignal.value = null;
+    };
+
+    // Clear selected file when media_type changes
+    const handleMediaTypeChange = (newMediaType: string) => {
+        setResourceFormData({ ...resourceFormData, media_type: newMediaType });
+        setSelectedFile(null);
+        setSelectedCover(null);
+        setUploadProgress(null);
     };
 
     const handleSubmitResource = async (e: Event) => {
@@ -185,17 +250,24 @@ export default function Resources({ initialResources, initialAuthors }: Resource
         successSignal.value = null;
 
         try {
-            // Upload files if PDF selected
+            // Upload files if file selected
             let fileUrl = resourceFormData.file_url;
             let coverUrl = resourceFormData.cover_image_url;
 
-            if (selectedPdf) {
-                const { pdfUrl, coverUrl: newCoverUrl } = await uploadResourceFiles(
-                    selectedPdf,
-                    setUploadProgress
+            if (selectedFile) {
+                const uploadOptions: UploadOptions = {
+                    mediaType: resourceFormData.media_type || 'text',
+                    coverFile: selectedCover || undefined,
+                };
+                const result = await uploadResourceFiles(
+                    selectedFile,
+                    setUploadProgress,
+                    uploadOptions
                 );
-                fileUrl = pdfUrl;
-                coverUrl = newCoverUrl;
+                fileUrl = result.fileUrl;
+                if (result.coverUrl) {
+                    coverUrl = result.coverUrl;
+                }
             }
 
             // Update form data with file URLs
@@ -215,6 +287,8 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                     description: formDataWithUrls.description,
                     cover_image_url: formDataWithUrls.cover_image_url,
                     file_url: formDataWithUrls.file_url,
+                    visible: formDataWithUrls.visible,
+                    media_type: formDataWithUrls.media_type,
                 };
                 const updated = await ResourceService.update(editingResource.id, updateData);
                 resourcesSignal.value = resourcesSignal.value.map(r =>
@@ -231,12 +305,14 @@ export default function Resources({ initialResources, initialAuthors }: Resource
             await Promise.all([
                 assignToClasses(resourceId, selectedClassIds),
                 assignCategories(resourceId, selectedCategoryIds),
+                assignLabels(resourceId, selectedLabelIds),
             ]);
 
             successSignal.value = editingResource ? 'Resource updated successfully' : 'Resource created successfully';
 
             // Reset state
-            setSelectedPdf(null);
+            setSelectedFile(null);
+            setSelectedCover(null);
             setUploadProgress(null);
             handleCancelResource();
         } catch (error: any) {
@@ -363,7 +439,13 @@ export default function Resources({ initialResources, initialAuthors }: Resource
 
     return (
         <div className="flex min-h-screen bg-white">
-            <Sidebar adminMenuItems={adminMenuItems} libraryMenuItems={libraryMenuItems} />
+            <Sidebar
+                adminMenuItems={adminMenuItems}
+                libraryMenuItems={libraryMenuItems}
+                levels={eduLevels}
+                sublevels={eduSublevels}
+                classes={eduClasses}
+            />
             <main className="flex-1 overflow-y-auto bg-gray-50">
                 <div className="p-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-6">
@@ -461,33 +543,81 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                     </select>
                                                 </div>
 
-                                                <div className="md:col-span-2">
+                                                <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        PDF File <span className="text-red-500">*</span>
+                                                        Visibility
+                                                    </label>
+                                                    <select
+                                                        value={resourceFormData.visible}
+                                                        onChange={(e) => setResourceFormData({ ...resourceFormData, visible: parseInt((e.target as HTMLSelectElement).value) })}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                    >
+                                                        <option value="1">Visible (Public)</option>
+                                                        <option value="0">Hidden (Private)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Media Type
+                                                    </label>
+                                                    <select
+                                                        value={resourceFormData.media_type}
+                                                        onChange={(e) => handleMediaTypeChange((e.target as HTMLSelectElement).value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue"
+                                                    >
+                                                        <option value="text">Text/PDF</option>
+                                                        <option value="audio">Audio</option>
+                                                        <option value="video">Video</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="md:col-span-2">
+                                                    {(() => {
+                                                        const mediaType = resourceFormData.media_type || 'text';
+                                                        const config = FILE_TYPE_CONFIG[mediaType] || FILE_TYPE_CONFIG.text;
+                                                        const isVideo = mediaType === 'video';
+                                                        const fileIcon = isVideo ? 'fa-file-video' : 'fa-file-pdf';
+                                                        const fileIconColor = isVideo ? 'text-purple-500' : 'text-red-500';
+
+                                                        return (
+                                                            <>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        {config.label} <span className="text-red-500">*</span>
                                                     </label>
 
-                                                    {!selectedPdf && !editingResource?.file_url ? (
+                                                    {!selectedFile && !editingResource?.file_url ? (
                                                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
                                                             <input
                                                                 type="file"
-                                                                accept="application/pdf"
+                                                                accept={config.accept}
                                                                 onChange={handleFileSelect}
                                                                 className="hidden"
-                                                                id="pdf-upload"
+                                                                id="file-upload"
                                                             />
-                                                            <label htmlFor="pdf-upload" className="cursor-pointer">
+                                                            <label htmlFor="file-upload" className="cursor-pointer">
                                                                 <i className="fa fa-cloud-upload text-4xl text-gray-400 mb-2"></i>
-                                                                <p className="text-gray-700 font-medium">Click to upload PDF</p>
+                                                                <p className="text-gray-700 font-medium">Click to upload {config.label.toLowerCase()}</p>
                                                                 <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
-                                                                <p className="text-xs text-gray-400 mt-2">PDF files up to 100MB</p>
+                                                                <p className="text-xs text-gray-400 mt-2">{config.label} up to {config.maxSizeLabel}</p>
                                                             </label>
                                                         </div>
-                                                    ) : selectedPdf ? (
+                                                    ) : selectedFile ? (
                                                         <div>
-                                                            <PdfPreview file={selectedPdf} />
+                                                            {mediaType === 'text' ? (
+                                                                <PdfPreview file={selectedFile} />
+                                                            ) : (
+                                                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center gap-3">
+                                                                    <i className={`fa ${fileIcon} text-3xl ${fileIconColor}`}></i>
+                                                                    <div>
+                                                                        <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                                                                        <p className="text-sm text-gray-500">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             <button
                                                                 type="button"
-                                                                onClick={() => setSelectedPdf(null)}
+                                                                onClick={() => setSelectedFile(null)}
                                                                 className="mt-2 text-sm text-red-600 hover:text-red-800"
                                                             >
                                                                 <i className="fa fa-times mr-1"></i>
@@ -506,13 +636,13 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                                                 className="w-32 h-auto border-2 border-gray-300 rounded shadow-sm"
                                                                             />
                                                                         ) : (
-                                                                            <i className="fa fa-file-pdf text-5xl text-red-500"></i>
+                                                                            <i className={`fa ${fileIcon} text-5xl ${fileIconColor}`}></i>
                                                                         )}
                                                                     </div>
                                                                     <div className="flex-1 min-w-0">
                                                                         <h4 className="font-medium text-gray-900 mb-2">
-                                                                            <i className="fa fa-file-pdf text-red-500 mr-2"></i>
-                                                                            Current PDF File
+                                                                            <i className={`fa ${fileIcon} ${fileIconColor} mr-2`}></i>
+                                                                            Current {config.label}
                                                                         </h4>
                                                                         <p className="text-sm text-gray-600 mb-2 break-all">
                                                                             <i className="fa fa-link text-xs mr-1"></i>
@@ -533,26 +663,73 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                             <div className="border-t border-gray-200 pt-3">
                                                                 <p className="text-sm text-gray-700 mb-2">
                                                                     <i className="fa fa-info-circle mr-1"></i>
-                                                                    Upload a new PDF to replace the current file
+                                                                    Upload a new file to replace the current one
                                                                 </p>
                                                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors cursor-pointer">
                                                                     <input
                                                                         type="file"
-                                                                        accept="application/pdf"
+                                                                        accept={config.accept}
                                                                         onChange={handleFileSelect}
                                                                         className="hidden"
-                                                                        id="pdf-upload-replace"
+                                                                        id="file-upload-replace"
                                                                     />
-                                                                    <label htmlFor="pdf-upload-replace" className="cursor-pointer">
+                                                                    <label htmlFor="file-upload-replace" className="cursor-pointer">
                                                                         <i className="fa fa-upload text-2xl text-gray-400 mb-1"></i>
-                                                                        <p className="text-sm text-gray-700 font-medium">Click to replace PDF</p>
-                                                                        <p className="text-xs text-gray-400 mt-1">PDF files up to 100MB</p>
+                                                                        <p className="text-sm text-gray-700 font-medium">Click to replace {config.label.toLowerCase()}</p>
+                                                                        <p className="text-xs text-gray-400 mt-1">{config.label} up to {config.maxSizeLabel}</p>
                                                                     </label>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     ) : null}
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </div>
+
+                                                {/* Cover image upload for video */}
+                                                {(resourceFormData.media_type === 'video') && (
+                                                    <div className="md:col-span-2">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Cover Image <span className="text-gray-400">(optional)</span>
+                                                        </label>
+                                                        {!selectedCover ? (
+                                                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/jpeg,image/png,image/webp"
+                                                                    onChange={handleCoverSelect}
+                                                                    className="hidden"
+                                                                    id="cover-upload"
+                                                                />
+                                                                <label htmlFor="cover-upload" className="cursor-pointer">
+                                                                    <i className="fa fa-image text-2xl text-gray-400 mb-1"></i>
+                                                                    <p className="text-sm text-gray-700 font-medium">Click to upload cover image</p>
+                                                                    <p className="text-xs text-gray-400 mt-1">JPEG, PNG, or WebP up to 10MB</p>
+                                                                </label>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                                                <img
+                                                                    src={URL.createObjectURL(selectedCover)}
+                                                                    alt="Cover preview"
+                                                                    className="w-16 h-auto rounded border border-gray-300"
+                                                                />
+                                                                <div className="flex-1">
+                                                                    <p className="text-sm font-medium text-gray-900">{selectedCover.name}</p>
+                                                                    <p className="text-xs text-gray-500">{(selectedCover.size / 1024).toFixed(0)} KB</p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedCover(null)}
+                                                                    className="text-sm text-red-600 hover:text-red-800"
+                                                                >
+                                                                    <i className="fa fa-times"></i>
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 {uploadProgress && (
                                                     <div className="md:col-span-2">
@@ -560,11 +737,13 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                     </div>
                                                 )}
 
-                                                {selectedPdf && uploadProgress?.stage === 'complete' && (
+                                                {selectedFile && uploadProgress?.stage === 'complete' && (
                                                     <div className="md:col-span-2 bg-green-50 border border-green-200 rounded-lg p-3">
                                                         <i className="fa fa-check-circle text-green-600 mr-2"></i>
                                                         <span className="text-green-800 text-sm">
-                                                            Files uploaded successfully! Cover auto-generated from first page.
+                                                            {resourceFormData.media_type === 'text'
+                                                                ? 'Files uploaded successfully! Cover auto-generated from first page.'
+                                                                : 'File uploaded successfully!'}
                                                         </span>
                                                     </div>
                                                 )}
@@ -588,34 +767,29 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                         <i className="fa fa-link mr-2 text-gray-600"></i>
                                                         Resource Assignments
                                                     </h4>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                         {/* Classes */}
                                                         <div>
                                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                                 Classes
                                                             </label>
-                                                            <div className="border border-gray-300 rounded-lg p-3 max-h-32 overflow-y-auto bg-white">
+                                                            <select
+                                                                multiple
+                                                                value={selectedClassIds.map(String)}
+                                                                onChange={(e) => {
+                                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions).map(opt => parseInt(opt.value));
+                                                                    setSelectedClassIds(selected);
+                                                                }}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue h-32"
+                                                            >
                                                                 {classes.map((cls) => (
-                                                                    <label key={cls.id} className="flex items-center py-1 hover:bg-gray-50 cursor-pointer">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={selectedClassIds.includes(cls.id)}
-                                                                            onChange={(e) => {
-                                                                                const checked = (e.target as HTMLInputElement).checked;
-                                                                                setSelectedClassIds(prev =>
-                                                                                    checked
-                                                                                        ? [...prev, cls.id]
-                                                                                        : prev.filter(id => id !== cls.id)
-                                                                                );
-                                                                            }}
-                                                                            className="mr-2"
-                                                                        />
-                                                                        <span className="text-sm text-gray-700">{cls.class_name}</span>
-                                                                    </label>
+                                                                    <option key={cls.id} value={cls.id}>
+                                                                        {cls.class_name}
+                                                                    </option>
                                                                 ))}
-                                                            </div>
+                                                            </select>
                                                             <p className="text-xs text-gray-500 mt-1">
-                                                                Select one or more classes
+                                                                Hold Ctrl (Cmd on Mac) to select multiple
                                                             </p>
                                                         </div>
 
@@ -624,30 +798,48 @@ export default function Resources({ initialResources, initialAuthors }: Resource
                                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                                 Categories
                                                             </label>
-                                                            <div className="border border-gray-300 rounded-lg p-3 max-h-32 overflow-y-auto bg-white">
+                                                            <select
+                                                                multiple
+                                                                value={selectedCategoryIds.map(String)}
+                                                                onChange={(e) => {
+                                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions).map(opt => parseInt(opt.value));
+                                                                    setSelectedCategoryIds(selected);
+                                                                }}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue h-32"
+                                                            >
                                                                 {categories.map((category) => (
-                                                                    <label key={category.id} className="flex items-center py-1 hover:bg-gray-50 cursor-pointer">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={selectedCategoryIds.includes(category.id)}
-                                                                            onChange={(e) => {
-                                                                                const checked = (e.target as HTMLInputElement).checked;
-                                                                                setSelectedCategoryIds(prev =>
-                                                                                    checked
-                                                                                        ? [...prev, category.id]
-                                                                                        : prev.filter(id => id !== category.id)
-                                                                                );
-                                                                            }}
-                                                                            className="mr-2"
-                                                                        />
-                                                                        <span className="text-sm text-gray-700">
-                                                                            {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
-                                                                        </span>
-                                                                    </label>
+                                                                    <option key={category.id} value={category.id}>
+                                                                        {category.parent_name ? `${category.parent_name} > ` : ''}{category.category_name}
+                                                                    </option>
                                                                 ))}
-                                                            </div>
+                                                            </select>
                                                             <p className="text-xs text-gray-500 mt-1">
-                                                                Select one or more categories
+                                                                Hold Ctrl (Cmd on Mac) to select multiple
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Labels */}
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Labels
+                                                            </label>
+                                                            <select
+                                                                multiple
+                                                                value={selectedLabelIds.map(String)}
+                                                                onChange={(e) => {
+                                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions).map(opt => parseInt(opt.value));
+                                                                    setSelectedLabelIds(selected);
+                                                                }}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-reb-blue h-32"
+                                                            >
+                                                                {labels.map((label) => (
+                                                                    <option key={label.id} value={label.id}>
+                                                                        {label.label_name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Hold Ctrl (Cmd on Mac) to select multiple
                                                             </p>
                                                         </div>
                                                     </div>

@@ -1,38 +1,20 @@
 /**
- * Upload service for MinIO S3 storage.
- * Handles PDF hashing, upload URL generation, file uploads, and cover extraction.
+ * Upload service for S3 storage.
+ * Handles file hashing, multipart uploads, and cover extraction (PDF only).
  *
  * @module local_reblibrary/services/upload
  * @copyright 2025 Rwanda Education Board
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker using CDN for reliability
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-
-// Declare AMD module types for TypeScript
-declare const require: any;
-
-/**
- * Upload URLs response from backend
- */
-export interface UploadUrls {
-  pdf_hash: string;
-  pdf_exists: boolean;
-  pdf_upload_url?: string;
-  pdf_public_url: string;
-  cover_upload_url: string;
-  cover_public_url: string;
-  expires_in: number;
-}
+// Moodle global config
+declare const M: { cfg: { sesskey: string; wwwroot: string } };
 
 /**
  * Upload progress information
  */
 export interface UploadProgress {
-  stage: 'hashing' | 'requesting_urls' | 'uploading_pdf' | 'extracting_cover' | 'uploading_cover' | 'complete';
+  stage: 'hashing' | 'requesting_urls' | 'uploading_pdf' | 'uploading_file' | 'extracting_cover' | 'uploading_cover' | 'complete';
   progress: number; // 0-100
   message: string;
   bytesUploaded?: number;
@@ -51,6 +33,24 @@ export interface PdfMetadata {
 }
 
 /**
+ * Options for uploadResourceFiles
+ */
+export interface UploadOptions {
+  mediaType?: string;   // 'text' | 'video' (default: 'text')
+  coverFile?: File;     // Manual cover image (used for video)
+}
+
+/**
+ * Upload result
+ */
+export interface UploadResult {
+  fileUrl: string;
+  coverUrl: string;
+  // Backward compat aliases
+  pdfUrl: string;
+}
+
+/**
  * Compute SHA-256 hash of a file.
  *
  * @param file File to hash
@@ -64,76 +64,71 @@ export async function computeFileHash(file: File): Promise<string> {
 }
 
 /**
- * Request upload URLs from backend.
- *
- * @param pdfHash SHA-256 hash of PDF file
- * @returns Promise resolving to upload URLs
+ * Upload file and optional cover via multipart form data.
+ * Uses XMLHttpRequest for real upload progress tracking.
  */
-export async function requestUploadUrls(pdfHash: string): Promise<UploadUrls> {
-  return new Promise((resolve, reject) => {
-    require(['core/ajax'], (ajax: any) => {
-      ajax.call([{
-        methodname: 'local_reblibrary_generate_upload_urls',
-        args: { pdf_hash: pdfHash }
-      }])[0]
-        .then((data: UploadUrls) => resolve(data))
-        .catch((error: any) => {
-          console.error('Failed to request upload URLs:', error);
-          reject(new Error(error.message || 'Failed to generate upload URLs'));
-        });
-    });
-  });
-}
+async function uploadViaMultipart(
+  fileHash: string,
+  file: File,
+  mediaType: string,
+  coverBlob: Blob | null,
+  onProgress: (progress: UploadProgress) => void
+): Promise<{ fileUrl: string; coverUrl: string }> {
+  const formData = new FormData();
+  formData.append('file_hash', fileHash);
+  formData.append('media_type', mediaType);
+  formData.append('sesskey', M.cfg.sesskey);
+  formData.append('file', file, file.name);
+  if (coverBlob) {
+    const coverName = coverBlob instanceof File ? coverBlob.name : 'cover.jpg';
+    formData.append('cover', coverBlob, coverName);
+  }
 
-/**
- * Upload file to MinIO using presigned URL.
- *
- * @param file File or Blob to upload
- * @param presignedUrl Presigned PUT URL from backend
- * @param contentType MIME type of the file
- * @param onProgress Progress callback (percentage 0-100)
- * @returns Promise that resolves when upload completes
- */
-export async function uploadToMinIO(
-  file: File | Blob,
-  presignedUrl: string,
-  contentType: string,
-  onProgress?: (progress: number, bytesUploaded: number, bytesTotal: number) => void
-): Promise<void> {
+  const stage = mediaType === 'video' ? 'uploading_file' : 'uploading_pdf';
+
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
-    // Track upload progress
     xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable && onProgress) {
-        const percentage = Math.round((e.loaded / e.total) * 100);
-        onProgress(percentage, e.loaded, e.total);
+      if (e.lengthComputable) {
+        // Map upload progress to 50-95% range (hashing + cover extraction = 0-50%)
+        const uploadPercent = (e.loaded / e.total) * 45 + 50;
+        onProgress({
+          stage,
+          progress: uploadPercent,
+          message: `Uploading to backend (${formatFileSize(e.loaded)} / ${formatFileSize(e.total)})...`,
+          bytesUploaded: e.loaded,
+          bytesTotal: e.total,
+        });
       }
     });
 
-    // Handle successful upload
     xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
-      } else {
-        reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
+      try {
+        const result = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300 && result.success) {
+          resolve({
+            fileUrl: result.file_url || result.pdf_url,
+            coverUrl: result.cover_url || '',
+          });
+        } else {
+          reject(new Error(result.error || 'Upload failed'));
+        }
+      } catch {
+        reject(new Error('Invalid server response'));
       }
     });
 
-    // Handle network errors
     xhr.addEventListener('error', () => {
       reject(new Error('Network error during upload'));
     });
 
-    // Handle abort
     xhr.addEventListener('abort', () => {
-      reject(new Error('Upload cancelled by user'));
+      reject(new Error('Upload was aborted'));
     });
 
-    // Perform upload
-    xhr.open('PUT', presignedUrl);
-    xhr.setRequestHeader('Content-Type', contentType);
-    xhr.send(file);
+    xhr.open('POST', M.cfg.wwwroot + '/local/reblibrary/upload_file.php');
+    xhr.send(formData);
   });
 }
 
@@ -150,6 +145,10 @@ export async function extractPdfCover(
   scale: number = 2.0,
   quality: number = 0.85
 ): Promise<Blob> {
+  // Dynamically import PDF.js only when needed
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
   try {
     // Load PDF
     const arrayBuffer = await pdfFile.arrayBuffer();
@@ -210,6 +209,9 @@ export async function extractPdfCover(
  * @returns Promise resolving to PDF metadata
  */
 export async function getPdfMetadata(pdfFile: File): Promise<PdfMetadata> {
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
   try {
     const arrayBuffer = await pdfFile.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -249,117 +251,85 @@ export function formatFileSize(bytes: number): string {
 }
 
 /**
- * Complete upload workflow for PDF resource file.
- * Handles hashing, deduplication check, upload, and cover extraction.
+ * Complete upload workflow for resource file.
+ * Handles hashing, optional cover extraction (PDF), and multipart upload with progress tracking.
  *
- * @param pdfFile PDF file to upload
+ * @param file File to upload (PDF or video)
  * @param onProgress Progress callback
- * @returns Promise resolving to public URLs for PDF and cover
+ * @param options Upload options (mediaType, coverFile)
+ * @returns Promise resolving to proxy URLs for file and cover
  */
 export async function uploadResourceFiles(
-  pdfFile: File,
-  onProgress: (progress: UploadProgress) => void
-): Promise<{ pdfUrl: string; coverUrl: string }> {
+  file: File,
+  onProgress: (progress: UploadProgress) => void,
+  options?: UploadOptions
+): Promise<UploadResult> {
+  const mediaType = options?.mediaType || 'text';
+  const coverFile = options?.coverFile || null;
 
   try {
-    // Stage 1: Hash PDF
+    // Stage 1: Hash file
     onProgress({
       stage: 'hashing',
       progress: 0,
       message: 'Computing file hash...',
     });
 
-    const pdfHash = await computeFileHash(pdfFile);
+    const fileHash = await computeFileHash(file);
 
     onProgress({
       stage: 'hashing',
-      progress: 15,
+      progress: 20,
       message: 'File hash computed',
     });
 
-    // Stage 2: Request URLs
-    onProgress({
-      stage: 'requesting_urls',
-      progress: 20,
-      message: 'Requesting upload URLs...',
-    });
+    // Stage 2: Handle cover image
+    let coverBlob: Blob | null = null;
 
-    const urls = await requestUploadUrls(pdfHash);
-
-    // Stage 3: Upload PDF (if needed)
-    if (!urls.pdf_exists && urls.pdf_upload_url) {
+    if (mediaType === 'text') {
+      // For PDFs: auto-extract cover from first page
       onProgress({
-        stage: 'uploading_pdf',
-        progress: 30,
-        message: `Uploading PDF (${formatFileSize(pdfFile.size)})...`,
-        bytesTotal: pdfFile.size,
+        stage: 'extracting_cover',
+        progress: 25,
+        message: 'Extracting cover image from first page...',
       });
 
-      await uploadToMinIO(
-        pdfFile,
-        urls.pdf_upload_url,
-        'application/pdf',
-        (percentage, uploaded, total) => {
-          onProgress({
-            stage: 'uploading_pdf',
-            progress: 30 + (percentage * 0.3), // 30-60%
-            message: `Uploading PDF... ${percentage}%`,
-            bytesUploaded: uploaded,
-            bytesTotal: total,
-          });
-        }
-      );
+      coverBlob = await extractPdfCover(file);
 
       onProgress({
-        stage: 'uploading_pdf',
-        progress: 60,
-        message: 'PDF uploaded successfully',
+        stage: 'extracting_cover',
+        progress: 40,
+        message: `Cover extracted (${formatFileSize(coverBlob.size)})`,
+      });
+    } else if (coverFile) {
+      // For video/audio: use manually provided cover
+      coverBlob = coverFile;
+
+      onProgress({
+        stage: 'extracting_cover',
+        progress: 40,
+        message: `Cover image ready (${formatFileSize(coverFile.size)})`,
       });
     } else {
+      // No cover - skip to upload
       onProgress({
-        stage: 'uploading_pdf',
-        progress: 60,
-        message: 'PDF already exists in storage (skipped upload)',
+        stage: 'extracting_cover',
+        progress: 40,
+        message: 'No cover image (optional for video)',
       });
     }
 
-    // Stage 4: Extract cover
+    // Stage 3: Upload via multipart form data
+    const uploadStage = mediaType === 'video' ? 'uploading_file' : 'uploading_pdf';
+    const totalSize = file.size + (coverBlob?.size || 0);
     onProgress({
-      stage: 'extracting_cover',
-      progress: 65,
-      message: 'Extracting cover image from first page...',
+      stage: uploadStage,
+      progress: 50,
+      message: `Uploading to backend (${formatFileSize(totalSize)})...`,
+      bytesTotal: totalSize,
     });
 
-    const coverBlob = await extractPdfCover(pdfFile);
-
-    onProgress({
-      stage: 'extracting_cover',
-      progress: 75,
-      message: `Cover extracted (${formatFileSize(coverBlob.size)})`,
-    });
-
-    // Stage 5: Upload cover
-    onProgress({
-      stage: 'uploading_cover',
-      progress: 80,
-      message: 'Uploading cover image...',
-      bytesTotal: coverBlob.size,
-    });
-
-    await uploadToMinIO(
-      coverBlob,
-      urls.cover_upload_url,
-      'image/jpeg',
-      (percentage, uploaded, total) => {
-        onProgress({
-          stage: 'uploading_cover',
-          progress: 80 + (percentage * 0.2), // 80-100%
-          message: `Uploading cover... ${percentage}%`,
-          bytesUploaded: uploaded,
-          bytesTotal: total,
-        });
-      }
-    );
+    const result = await uploadViaMultipart(fileHash, file, mediaType, coverBlob, onProgress);
 
     // Complete
     onProgress({
@@ -369,8 +339,9 @@ export async function uploadResourceFiles(
     });
 
     return {
-      pdfUrl: urls.pdf_public_url,
-      coverUrl: urls.cover_public_url,
+      fileUrl: result.fileUrl,
+      coverUrl: result.coverUrl,
+      pdfUrl: result.fileUrl, // backward compat
     };
 
   } catch (error) {
