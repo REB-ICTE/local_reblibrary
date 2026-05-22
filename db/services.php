@@ -243,6 +243,47 @@ $functions = [
         'capabilities' => 'moodle/site:config',
     ],
 
+    // Education structure reorder (drag-and-drop) endpoints.
+    'local_reblibrary_reorder_levels' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'reorder_levels',
+        'classpath' => '',
+        'description' => 'Persist a new sort order for education levels',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_reorder_sublevels' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'reorder_sublevels',
+        'classpath' => '',
+        'description' => 'Persist a new sort order for education sublevels',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_reorder_classes' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'reorder_classes',
+        'classpath' => '',
+        'description' => 'Persist a new sort order for classes',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
+    'local_reblibrary_reorder_sections' => [
+        'classname' => 'local_reblibrary\external\edu_structure',
+        'methodname' => 'reorder_sections',
+        'classpath' => '',
+        'description' => 'Persist a new sort order for sections',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/site:config',
+    ],
+
     // Categories web services.
     'local_reblibrary_create_category' => [
         'classname' => 'local_reblibrary\external\categories',

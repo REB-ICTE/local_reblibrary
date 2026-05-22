@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import { LevelService } from "../../services/edu-structure";
 import type { EduLevel, CreateLevelData } from "../../services/edu-structure";
 import { levelsSignal, loadingSignal, errorSignal, successSignal } from "./EdStructure";
+import { useDragSort } from "../shared/useDragSort";
 
 export default function LevelTab() {
     const [showForm, setShowForm] = useState(false);
@@ -48,11 +49,9 @@ export default function LevelTab() {
                 );
                 successSignal.value = 'Education level updated successfully';
             } else {
-                // Create
+                // Create — append at end (server assigns next sortorder).
                 const created = await LevelService.create(formData);
-                levelsSignal.value = [...levelsSignal.value, created].sort((a, b) =>
-                    a.level_name.localeCompare(b.level_name)
-                );
+                levelsSignal.value = [...levelsSignal.value, created];
                 successSignal.value = 'Education level created successfully';
             }
             handleCancel();
@@ -62,6 +61,25 @@ export default function LevelTab() {
             loadingSignal.value = false;
         }
     };
+
+    // Drag-and-drop reorder.
+    const commitReorder = async (newOrder: EduLevel[]) => {
+        const previous = levelsSignal.value;
+        // Re-stamp sortorder 1..n in the new order and update the signal optimistically.
+        const restamped = newOrder.map((l, i) => ({ ...l, sortorder: i + 1 }));
+        levelsSignal.value = restamped;
+
+        try {
+            await LevelService.reorder(restamped.map(l => ({ id: l.id, sortorder: l.sortorder })));
+            successSignal.value = 'Order updated';
+        } catch (error: any) {
+            // Revert on failure.
+            levelsSignal.value = previous;
+            errorSignal.value = error.message || 'Failed to save new order';
+        }
+    };
+
+    const dnd = useDragSort<EduLevel>(levelsSignal.value, { onCommit: commitReorder });
 
     const handleDelete = async (level: EduLevel) => {
         if (!confirm(`Are you sure you want to delete "${level.level_name}"?`)) {
@@ -158,14 +176,36 @@ export default function LevelTab() {
                             <table className="w-full border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-200">
+                                        <th className="w-8 py-3 px-2"></th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Level Name</th>
                                         <th className="text-right py-3 px-4 font-medium text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {levelsSignal.value.map((level) => (
-                                        <tr key={level.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                    {levelsSignal.value.map((level, index) => {
+                                        const rowProps = dnd.rowProps(index);
+                                        const handleProps = dnd.handleProps(index);
+                                        return (
+                                        <tr
+                                            key={level.id}
+                                            draggable={rowProps.draggable}
+                                            onDragOver={rowProps.onDragOver}
+                                            onDragLeave={rowProps.onDragLeave}
+                                            onDrop={rowProps.onDrop}
+                                            onDragEnd={rowProps.onDragEnd}
+                                            className={`border-b border-gray-200 hover:bg-gray-50 ${rowProps.className}`}
+                                        >
+                                            <td
+                                                draggable
+                                                onDragStart={handleProps.onDragStart}
+                                                onMouseDown={handleProps.onMouseDown}
+                                                onMouseUp={handleProps.onMouseUp}
+                                                className={`py-3 px-2 text-center ${handleProps.className}`}
+                                                title="Drag to reorder"
+                                            >
+                                                <i className="fa fa-grip-vertical"></i>
+                                            </td>
                                             <td className="py-3 px-4 text-gray-600">{level.id}</td>
                                             <td className="py-3 px-4 text-gray-900 font-medium">{level.level_name}</td>
                                             <td className="py-3 px-4">
@@ -187,7 +227,8 @@ export default function LevelTab() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

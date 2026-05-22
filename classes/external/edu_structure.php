@@ -61,13 +61,14 @@ class edu_structure extends external_api {
         self::validate_context($context);
         require_capability('moodle/site:config', $context);
 
-        $levels = $DB->get_records('local_reblibrary_edu_levels', null, 'level_name ASC');
+        $levels = $DB->get_records('local_reblibrary_edu_levels', null, 'sortorder ASC, level_name ASC');
 
         $result = [];
         foreach ($levels as $level) {
             $result[] = [
                 'id' => $level->id,
                 'level_name' => $level->level_name,
+                'sortorder' => (int) $level->sortorder,
             ];
         }
 
@@ -82,6 +83,7 @@ class edu_structure extends external_api {
             new external_single_structure([
                 'id' => new external_value(PARAM_INT, 'Level ID'),
                 'level_name' => new external_value(PARAM_TEXT, 'Level name'),
+                'sortorder' => new external_value(PARAM_INT, 'Display sort order'),
             ])
         );
     }
@@ -116,6 +118,9 @@ class edu_structure extends external_api {
 
         $record = new \stdClass();
         $record->level_name = $params['level_name'];
+        $record->sortorder = (int) $DB->get_field_sql(
+            'SELECT COALESCE(MAX(sortorder), 0) + 1 FROM {local_reblibrary_edu_levels}'
+        );
 
         $id = $DB->insert_record('local_reblibrary_edu_levels', $record);
 
@@ -124,6 +129,7 @@ class edu_structure extends external_api {
         return [
             'id' => $level->id,
             'level_name' => $level->level_name,
+            'sortorder' => (int) $level->sortorder,
         ];
     }
 
@@ -134,6 +140,7 @@ class edu_structure extends external_api {
         return new external_single_structure([
             'id' => new external_value(PARAM_INT, 'Level ID'),
             'level_name' => new external_value(PARAM_TEXT, 'Level name'),
+            'sortorder' => new external_value(PARAM_INT, 'Display sort order'),
         ]);
     }
 
@@ -178,6 +185,7 @@ class edu_structure extends external_api {
         return [
             'id' => $level->id,
             'level_name' => $level->level_name,
+            'sortorder' => (int) $level->sortorder,
         ];
     }
 
@@ -188,6 +196,7 @@ class edu_structure extends external_api {
         return new external_single_structure([
             'id' => new external_value(PARAM_INT, 'Level ID'),
             'level_name' => new external_value(PARAM_TEXT, 'Level name'),
+            'sortorder' => new external_value(PARAM_INT, 'Display sort order'),
         ]);
     }
 
@@ -247,7 +256,7 @@ class edu_structure extends external_api {
         self::validate_context($context);
         require_capability('moodle/site:config', $context);
 
-        $sublevels = $DB->get_records('local_reblibrary_edu_sublevels', null, 'sublevel_name ASC');
+        $sublevels = $DB->get_records('local_reblibrary_edu_sublevels', null, 'level_id ASC, sortorder ASC, sublevel_name ASC');
 
         $result = [];
         foreach ($sublevels as $sublevel) {
@@ -255,6 +264,7 @@ class edu_structure extends external_api {
                 'id' => $sublevel->id,
                 'sublevel_name' => $sublevel->sublevel_name,
                 'level_id' => $sublevel->level_id,
+                'sortorder' => (int) $sublevel->sortorder,
             ];
         }
 
@@ -270,6 +280,7 @@ class edu_structure extends external_api {
                 'id' => new external_value(PARAM_INT, 'Sublevel ID'),
                 'sublevel_name' => new external_value(PARAM_TEXT, 'Sublevel name'),
                 'level_id' => new external_value(PARAM_INT, 'Parent level ID'),
+                'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent level'),
             ])
         );
     }
@@ -307,6 +318,10 @@ class edu_structure extends external_api {
         $record = new \stdClass();
         $record->sublevel_name = $params['sublevel_name'];
         $record->level_id = $params['level_id'];
+        $record->sortorder = (int) $DB->get_field_sql(
+            'SELECT COALESCE(MAX(sortorder), 0) + 1 FROM {local_reblibrary_edu_sublevels} WHERE level_id = ?',
+            [$params['level_id']]
+        );
 
         $id = $DB->insert_record('local_reblibrary_edu_sublevels', $record);
 
@@ -316,6 +331,7 @@ class edu_structure extends external_api {
             'id' => $sublevel->id,
             'sublevel_name' => $sublevel->sublevel_name,
             'level_id' => $sublevel->level_id,
+            'sortorder' => (int) $sublevel->sortorder,
         ];
     }
 
@@ -327,6 +343,7 @@ class edu_structure extends external_api {
             'id' => new external_value(PARAM_INT, 'Sublevel ID'),
             'sublevel_name' => new external_value(PARAM_TEXT, 'Sublevel name'),
             'level_id' => new external_value(PARAM_INT, 'Parent level ID'),
+            'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent level'),
         ]);
     }
 
@@ -367,6 +384,14 @@ class edu_structure extends external_api {
             throw new \moodle_exception('error_duplicate_sublevel_name', 'local_reblibrary');
         }
 
+        // If the parent level changed, place the sublevel at the end of the new parent's list.
+        if ((int) $sublevel->level_id !== (int) $params['level_id']) {
+            $sublevel->sortorder = (int) $DB->get_field_sql(
+                'SELECT COALESCE(MAX(sortorder), 0) + 1 FROM {local_reblibrary_edu_sublevels} WHERE level_id = ?',
+                [$params['level_id']]
+            );
+        }
+
         $sublevel->sublevel_name = $params['sublevel_name'];
         $sublevel->level_id = $params['level_id'];
         $DB->update_record('local_reblibrary_edu_sublevels', $sublevel);
@@ -375,6 +400,7 @@ class edu_structure extends external_api {
             'id' => $sublevel->id,
             'sublevel_name' => $sublevel->sublevel_name,
             'level_id' => $sublevel->level_id,
+            'sortorder' => (int) $sublevel->sortorder,
         ];
     }
 
@@ -386,6 +412,7 @@ class edu_structure extends external_api {
             'id' => new external_value(PARAM_INT, 'Sublevel ID'),
             'sublevel_name' => new external_value(PARAM_TEXT, 'Sublevel name'),
             'level_id' => new external_value(PARAM_INT, 'Parent level ID'),
+            'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent level'),
         ]);
     }
 
@@ -445,7 +472,7 @@ class edu_structure extends external_api {
         self::validate_context($context);
         require_capability('moodle/site:config', $context);
 
-        $classes = $DB->get_records('local_reblibrary_classes', null, 'class_code ASC');
+        $classes = $DB->get_records('local_reblibrary_classes', null, 'sublevel_id ASC, sortorder ASC, class_code ASC');
 
         $result = [];
         foreach ($classes as $class) {
@@ -454,6 +481,7 @@ class edu_structure extends external_api {
                 'class_name' => $class->class_name,
                 'class_code' => $class->class_code,
                 'sublevel_id' => $class->sublevel_id,
+                'sortorder' => (int) $class->sortorder,
             ];
         }
 
@@ -470,6 +498,7 @@ class edu_structure extends external_api {
                 'class_name' => new external_value(PARAM_TEXT, 'Class name'),
                 'class_code' => new external_value(PARAM_TEXT, 'Class code'),
                 'sublevel_id' => new external_value(PARAM_INT, 'Parent sublevel ID'),
+                'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent sublevel'),
             ])
         );
     }
@@ -515,6 +544,10 @@ class edu_structure extends external_api {
         $record->class_name = $params['class_name'];
         $record->class_code = $params['class_code'];
         $record->sublevel_id = $params['sublevel_id'];
+        $record->sortorder = (int) $DB->get_field_sql(
+            'SELECT COALESCE(MAX(sortorder), 0) + 1 FROM {local_reblibrary_classes} WHERE sublevel_id = ?',
+            [$params['sublevel_id']]
+        );
 
         $id = $DB->insert_record('local_reblibrary_classes', $record);
 
@@ -525,6 +558,7 @@ class edu_structure extends external_api {
             'class_name' => $class->class_name,
             'class_code' => $class->class_code,
             'sublevel_id' => $class->sublevel_id,
+            'sortorder' => (int) $class->sortorder,
         ];
     }
 
@@ -537,6 +571,7 @@ class edu_structure extends external_api {
             'class_name' => new external_value(PARAM_TEXT, 'Class name'),
             'class_code' => new external_value(PARAM_TEXT, 'Class code'),
             'sublevel_id' => new external_value(PARAM_INT, 'Parent sublevel ID'),
+            'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent sublevel'),
         ]);
     }
 
@@ -587,6 +622,14 @@ class edu_structure extends external_api {
             throw new \moodle_exception('error_duplicate_class_code', 'local_reblibrary');
         }
 
+        // If the parent sublevel changed, place the class at the end of the new parent's list.
+        if ((int) $class->sublevel_id !== (int) $params['sublevel_id']) {
+            $class->sortorder = (int) $DB->get_field_sql(
+                'SELECT COALESCE(MAX(sortorder), 0) + 1 FROM {local_reblibrary_classes} WHERE sublevel_id = ?',
+                [$params['sublevel_id']]
+            );
+        }
+
         $class->class_name = $params['class_name'];
         $class->class_code = $params['class_code'];
         $class->sublevel_id = $params['sublevel_id'];
@@ -597,6 +640,7 @@ class edu_structure extends external_api {
             'class_name' => $class->class_name,
             'class_code' => $class->class_code,
             'sublevel_id' => $class->sublevel_id,
+            'sortorder' => (int) $class->sortorder,
         ];
     }
 
@@ -609,6 +653,7 @@ class edu_structure extends external_api {
             'class_name' => new external_value(PARAM_TEXT, 'Class name'),
             'class_code' => new external_value(PARAM_TEXT, 'Class code'),
             'sublevel_id' => new external_value(PARAM_INT, 'Parent sublevel ID'),
+            'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent sublevel'),
         ]);
     }
 
@@ -668,7 +713,7 @@ class edu_structure extends external_api {
         self::validate_context($context);
         require_capability('moodle/site:config', $context);
 
-        $sections = $DB->get_records('local_reblibrary_sections', null, 'section_code ASC');
+        $sections = $DB->get_records('local_reblibrary_sections', null, 'sublevel_id ASC, sortorder ASC, section_code ASC');
 
         $result = [];
         foreach ($sections as $section) {
@@ -677,6 +722,7 @@ class edu_structure extends external_api {
                 'section_name' => $section->section_name,
                 'section_code' => $section->section_code,
                 'sublevel_id' => $section->sublevel_id,
+                'sortorder' => (int) $section->sortorder,
             ];
         }
 
@@ -693,6 +739,7 @@ class edu_structure extends external_api {
                 'section_name' => new external_value(PARAM_TEXT, 'Section name'),
                 'section_code' => new external_value(PARAM_TEXT, 'Section code'),
                 'sublevel_id' => new external_value(PARAM_INT, 'Parent sublevel ID'),
+                'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent sublevel'),
             ])
         );
     }
@@ -733,6 +780,10 @@ class edu_structure extends external_api {
         $record->section_name = $params['section_name'];
         $record->section_code = $params['section_code'];
         $record->sublevel_id = $params['sublevel_id'];
+        $record->sortorder = (int) $DB->get_field_sql(
+            'SELECT COALESCE(MAX(sortorder), 0) + 1 FROM {local_reblibrary_sections} WHERE sublevel_id = ?',
+            [$params['sublevel_id']]
+        );
 
         $id = $DB->insert_record('local_reblibrary_sections', $record);
 
@@ -743,6 +794,7 @@ class edu_structure extends external_api {
             'section_name' => $section->section_name,
             'section_code' => $section->section_code,
             'sublevel_id' => $section->sublevel_id,
+            'sortorder' => (int) $section->sortorder,
         ];
     }
 
@@ -755,6 +807,7 @@ class edu_structure extends external_api {
             'section_name' => new external_value(PARAM_TEXT, 'Section name'),
             'section_code' => new external_value(PARAM_TEXT, 'Section code'),
             'sublevel_id' => new external_value(PARAM_INT, 'Parent sublevel ID'),
+            'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent sublevel'),
         ]);
     }
 
@@ -797,6 +850,14 @@ class edu_structure extends external_api {
             throw new \moodle_exception('error_duplicate_section_code', 'local_reblibrary');
         }
 
+        // If the parent sublevel changed, place the section at the end of the new parent's list.
+        if ((int) $section->sublevel_id !== (int) $params['sublevel_id']) {
+            $section->sortorder = (int) $DB->get_field_sql(
+                'SELECT COALESCE(MAX(sortorder), 0) + 1 FROM {local_reblibrary_sections} WHERE sublevel_id = ?',
+                [$params['sublevel_id']]
+            );
+        }
+
         $section->section_name = $params['section_name'];
         $section->section_code = $params['section_code'];
         $section->sublevel_id = $params['sublevel_id'];
@@ -807,6 +868,7 @@ class edu_structure extends external_api {
             'section_name' => $section->section_name,
             'section_code' => $section->section_code,
             'sublevel_id' => $section->sublevel_id,
+            'sortorder' => (int) $section->sortorder,
         ];
     }
 
@@ -819,6 +881,7 @@ class edu_structure extends external_api {
             'section_name' => new external_value(PARAM_TEXT, 'Section name'),
             'section_code' => new external_value(PARAM_TEXT, 'Section code'),
             'sublevel_id' => new external_value(PARAM_INT, 'Parent sublevel ID'),
+            'sortorder' => new external_value(PARAM_INT, 'Display sort order within parent sublevel'),
         ]);
     }
 
@@ -855,5 +918,125 @@ class edu_structure extends external_api {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Success status'),
         ]);
+    }
+
+    // ============================================
+    // REORDER ENDPOINTS
+    // ============================================
+
+    /**
+     * Shared helper: parameter description for a reorder endpoint.
+     */
+    private static function reorder_params_structure() {
+        return new external_function_parameters([
+            'items' => new external_multiple_structure(
+                new external_single_structure([
+                    'id' => new external_value(PARAM_INT, 'Record ID'),
+                    'sortorder' => new external_value(PARAM_INT, 'New sort order (1-based)'),
+                ]),
+                'Ordered list of {id, sortorder} pairs'
+            ),
+        ]);
+    }
+
+    /**
+     * Shared helper: return description for a reorder endpoint.
+     */
+    private static function reorder_returns_structure() {
+        return new external_single_structure([
+            'success' => new external_value(PARAM_BOOL, 'Success status'),
+            'updated' => new external_value(PARAM_INT, 'Number of records updated'),
+        ]);
+    }
+
+    /**
+     * Shared helper: apply a batch of {id, sortorder} updates to a single table
+     * inside one transaction.
+     *
+     * @param string $table Moodle table name (without prefix).
+     * @param array $items Items as validated by reorder_params_structure().
+     * @return array {success: bool, updated: int}
+     */
+    private static function apply_reorder($table, array $items) {
+        global $DB;
+
+        $context = context_system::instance();
+        self::validate_context($context);
+        require_capability('moodle/site:config', $context);
+
+        $transaction = $DB->start_delegated_transaction();
+        $updated = 0;
+        try {
+            foreach ($items as $item) {
+                $DB->set_field($table, 'sortorder', (int) $item['sortorder'], ['id' => (int) $item['id']]);
+                $updated++;
+            }
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+            throw $e;
+        }
+
+        return ['success' => true, 'updated' => $updated];
+    }
+
+    // --- Levels ---
+
+    public static function reorder_levels_parameters() {
+        return self::reorder_params_structure();
+    }
+
+    public static function reorder_levels($items) {
+        $params = self::validate_parameters(self::reorder_levels_parameters(), ['items' => $items]);
+        return self::apply_reorder('local_reblibrary_edu_levels', $params['items']);
+    }
+
+    public static function reorder_levels_returns() {
+        return self::reorder_returns_structure();
+    }
+
+    // --- Sublevels ---
+
+    public static function reorder_sublevels_parameters() {
+        return self::reorder_params_structure();
+    }
+
+    public static function reorder_sublevels($items) {
+        $params = self::validate_parameters(self::reorder_sublevels_parameters(), ['items' => $items]);
+        return self::apply_reorder('local_reblibrary_edu_sublevels', $params['items']);
+    }
+
+    public static function reorder_sublevels_returns() {
+        return self::reorder_returns_structure();
+    }
+
+    // --- Classes ---
+
+    public static function reorder_classes_parameters() {
+        return self::reorder_params_structure();
+    }
+
+    public static function reorder_classes($items) {
+        $params = self::validate_parameters(self::reorder_classes_parameters(), ['items' => $items]);
+        return self::apply_reorder('local_reblibrary_classes', $params['items']);
+    }
+
+    public static function reorder_classes_returns() {
+        return self::reorder_returns_structure();
+    }
+
+    // --- Sections ---
+
+    public static function reorder_sections_parameters() {
+        return self::reorder_params_structure();
+    }
+
+    public static function reorder_sections($items) {
+        $params = self::validate_parameters(self::reorder_sections_parameters(), ['items' => $items]);
+        return self::apply_reorder('local_reblibrary_sections', $params['items']);
+    }
+
+    public static function reorder_sections_returns() {
+        return self::reorder_returns_structure();
     }
 }

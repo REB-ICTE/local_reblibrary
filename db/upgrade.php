@@ -128,5 +128,90 @@ function xmldb_local_reblibrary_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025102503, 'local', 'reblibrary');
     }
 
+    if ($oldversion < 2026052200) {
+        // Add `sortorder` column to the four education-structure tables and
+        // backfill it so the immediate display order is the same as the
+        // pre-upgrade alphabetical sort.
+
+        // ----- local_reblibrary_edu_levels -----
+        $table = new xmldb_table('local_reblibrary_edu_levels');
+        $field = new xmldb_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'level_name');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('sortorder', XMLDB_INDEX_NOTUNIQUE, ['sortorder']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        $rows = $DB->get_records('local_reblibrary_edu_levels', null, 'level_name ASC', 'id');
+        $i = 1;
+        foreach ($rows as $row) {
+            $DB->set_field('local_reblibrary_edu_levels', 'sortorder', $i, ['id' => $row->id]);
+            $i++;
+        }
+
+        // ----- local_reblibrary_edu_sublevels -----
+        $table = new xmldb_table('local_reblibrary_edu_sublevels');
+        $field = new xmldb_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'level_id');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('level_sortorder', XMLDB_INDEX_NOTUNIQUE, ['level_id', 'sortorder']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        $levelids = $DB->get_fieldset_select('local_reblibrary_edu_sublevels', 'DISTINCT level_id', '1=1');
+        foreach ($levelids as $levelid) {
+            $rows = $DB->get_records('local_reblibrary_edu_sublevels', ['level_id' => $levelid], 'sublevel_name ASC', 'id');
+            $i = 1;
+            foreach ($rows as $row) {
+                $DB->set_field('local_reblibrary_edu_sublevels', 'sortorder', $i, ['id' => $row->id]);
+                $i++;
+            }
+        }
+
+        // ----- local_reblibrary_classes -----
+        $table = new xmldb_table('local_reblibrary_classes');
+        $field = new xmldb_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'sublevel_id');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('sublevel_sortorder', XMLDB_INDEX_NOTUNIQUE, ['sublevel_id', 'sortorder']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        $sublevelids = $DB->get_fieldset_select('local_reblibrary_classes', 'DISTINCT sublevel_id', '1=1');
+        foreach ($sublevelids as $sublevelid) {
+            $rows = $DB->get_records('local_reblibrary_classes', ['sublevel_id' => $sublevelid], 'class_code ASC', 'id');
+            $i = 1;
+            foreach ($rows as $row) {
+                $DB->set_field('local_reblibrary_classes', 'sortorder', $i, ['id' => $row->id]);
+                $i++;
+            }
+        }
+
+        // ----- local_reblibrary_sections -----
+        $table = new xmldb_table('local_reblibrary_sections');
+        $field = new xmldb_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'sublevel_id');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('sublevel_sortorder', XMLDB_INDEX_NOTUNIQUE, ['sublevel_id', 'sortorder']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        $sublevelids = $DB->get_fieldset_select('local_reblibrary_sections', 'DISTINCT sublevel_id', '1=1');
+        foreach ($sublevelids as $sublevelid) {
+            $rows = $DB->get_records('local_reblibrary_sections', ['sublevel_id' => $sublevelid], 'section_code ASC', 'id');
+            $i = 1;
+            foreach ($rows as $row) {
+                $DB->set_field('local_reblibrary_sections', 'sortorder', $i, ['id' => $row->id]);
+                $i++;
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2026052200, 'local', 'reblibrary');
+    }
+
     return true;
 }

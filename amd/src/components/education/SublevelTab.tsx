@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import { SublevelService } from "../../services/edu-structure";
 import type { EduSublevel, CreateSublevelData } from "../../services/edu-structure";
 import { levelsSignal, sublevelsSignal, loadingSignal, errorSignal, successSignal } from "./EdStructure";
+import { useDragSort } from "../shared/useDragSort";
 
 export default function SublevelTab() {
     const [showForm, setShowForm] = useState(false);
@@ -58,10 +59,9 @@ export default function SublevelTab() {
                 );
                 successSignal.value = 'Sublevel updated successfully';
             } else {
+                // Create — server assigns next sortorder within its parent level.
                 const created = await SublevelService.create(formData);
-                sublevelsSignal.value = [...sublevelsSignal.value, created].sort((a, b) =>
-                    a.sublevel_name.localeCompare(b.sublevel_name)
-                );
+                sublevelsSignal.value = [...sublevelsSignal.value, created];
                 successSignal.value = 'Sublevel created successfully';
             }
             handleCancel();
@@ -95,6 +95,50 @@ export default function SublevelTab() {
     const getLevelName = (levelId: number) => {
         return levelsSignal.value.find(l => l.id === levelId)?.level_name || `ID: ${levelId}`;
     };
+
+    // Drag-and-drop reorder — scoped per parent level. Only the items in the
+    // dragged row's level get their sortorder re-stamped; cross-level drops are
+    // blocked by the hook's `getGroupKey` guard.
+    const commitReorder = async (newOrder: EduSublevel[]) => {
+        const previous = sublevelsSignal.value;
+
+        // Find the level whose ordering actually changed (the dragged item's level).
+        // Re-stamp sortorder 1..n within each level group; other groups are unaffected.
+        const groups = new Map<number, EduSublevel[]>();
+        for (const s of newOrder) {
+            const g = groups.get(s.level_id) ?? [];
+            g.push(s);
+            groups.set(s.level_id, g);
+        }
+        const restamped: EduSublevel[] = [];
+        const dirty: { id: number; sortorder: number }[] = [];
+        for (const [, group] of groups) {
+            group.forEach((item, i) => {
+                const so = i + 1;
+                if (item.sortorder !== so) {
+                    dirty.push({ id: item.id, sortorder: so });
+                }
+                restamped.push({ ...item, sortorder: so });
+            });
+        }
+
+        sublevelsSignal.value = restamped;
+
+        if (dirty.length === 0) return; // No-op drop.
+
+        try {
+            await SublevelService.reorder(dirty);
+            successSignal.value = 'Order updated';
+        } catch (error: any) {
+            sublevelsSignal.value = previous;
+            errorSignal.value = error.message || 'Failed to save new order';
+        }
+    };
+
+    const dnd = useDragSort<EduSublevel>(sublevelsSignal.value, {
+        getGroupKey: (s) => s.level_id,
+        onCommit: commitReorder,
+    });
 
     return (
         <div className="p-6">
@@ -198,9 +242,14 @@ export default function SublevelTab() {
                     {/* Table View */}
                     {sublevelsSignal.value.length > 0 ? (
                         <div className="overflow-x-auto">
+                            <p className="text-xs text-gray-500 mb-2">
+                                <i className="fa fa-info-circle mr-1"></i>
+                                Drag rows within the same parent level to reorder.
+                            </p>
                             <table className="w-full border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-200">
+                                        <th className="w-8 py-3 px-2"></th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Sublevel Name</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Parent Level</th>
@@ -208,8 +257,29 @@ export default function SublevelTab() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sublevelsSignal.value.map((sublevel) => (
-                                        <tr key={sublevel.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                    {sublevelsSignal.value.map((sublevel, index) => {
+                                        const rowProps = dnd.rowProps(index);
+                                        const handleProps = dnd.handleProps(index);
+                                        return (
+                                        <tr
+                                            key={sublevel.id}
+                                            draggable={rowProps.draggable}
+                                            onDragOver={rowProps.onDragOver}
+                                            onDragLeave={rowProps.onDragLeave}
+                                            onDrop={rowProps.onDrop}
+                                            onDragEnd={rowProps.onDragEnd}
+                                            className={`border-b border-gray-200 hover:bg-gray-50 ${rowProps.className}`}
+                                        >
+                                            <td
+                                                draggable
+                                                onDragStart={handleProps.onDragStart}
+                                                onMouseDown={handleProps.onMouseDown}
+                                                onMouseUp={handleProps.onMouseUp}
+                                                className={`py-3 px-2 text-center ${handleProps.className}`}
+                                                title="Drag to reorder (within the same parent level)"
+                                            >
+                                                <i className="fa fa-grip-vertical"></i>
+                                            </td>
                                             <td className="py-3 px-4 text-gray-600">{sublevel.id}</td>
                                             <td className="py-3 px-4 text-gray-900 font-medium">{sublevel.sublevel_name}</td>
                                             <td className="py-3 px-4 text-gray-700">{getLevelName(sublevel.level_id)}</td>
@@ -232,7 +302,8 @@ export default function SublevelTab() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

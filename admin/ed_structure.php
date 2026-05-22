@@ -62,28 +62,30 @@ $PAGE->navbar->add(get_string('ed_structure_page_title', 'local_reblibrary'));
 global $DB;
 
 // Levels.
-$levels = $DB->get_records('local_reblibrary_edu_levels', null, 'level_name ASC');
+$levels = $DB->get_records('local_reblibrary_edu_levels', null, 'sortorder ASC, level_name ASC');
 $levelsdata = [];
 foreach ($levels as $level) {
     $levelsdata[] = [
         'id' => $level->id,
         'level_name' => $level->level_name,
+        'sortorder' => (int) $level->sortorder,
     ];
 }
 
 // Sublevels.
-$sublevels = $DB->get_records('local_reblibrary_edu_sublevels', null, 'sublevel_name ASC');
+$sublevels = $DB->get_records('local_reblibrary_edu_sublevels', null, 'level_id ASC, sortorder ASC, sublevel_name ASC');
 $sublevelsdata = [];
 foreach ($sublevels as $sublevel) {
     $sublevelsdata[] = [
         'id' => $sublevel->id,
         'sublevel_name' => $sublevel->sublevel_name,
         'level_id' => $sublevel->level_id,
+        'sortorder' => (int) $sublevel->sortorder,
     ];
 }
 
 // Classes.
-$classes = $DB->get_records('local_reblibrary_classes', null, 'class_code ASC');
+$classes = $DB->get_records('local_reblibrary_classes', null, 'sublevel_id ASC, sortorder ASC, class_code ASC');
 $classesdata = [];
 foreach ($classes as $class) {
     $classesdata[] = [
@@ -91,11 +93,12 @@ foreach ($classes as $class) {
         'class_name' => $class->class_name,
         'class_code' => $class->class_code,
         'sublevel_id' => $class->sublevel_id,
+        'sortorder' => (int) $class->sortorder,
     ];
 }
 
 // Sections.
-$sections = $DB->get_records('local_reblibrary_sections', null, 'section_code ASC');
+$sections = $DB->get_records('local_reblibrary_sections', null, 'sublevel_id ASC, sortorder ASC, section_code ASC');
 $sectionsdata = [];
 foreach ($sections as $section) {
     $sectionsdata[] = [
@@ -103,6 +106,7 @@ foreach ($sections as $section) {
         'section_name' => $section->section_name,
         'section_code' => $section->section_code,
         'sublevel_id' => $section->sublevel_id,
+        'sortorder' => (int) $section->sortorder,
     ];
 }
 
