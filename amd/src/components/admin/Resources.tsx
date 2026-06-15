@@ -22,7 +22,7 @@ import PdfPreview from "./PdfPreview";
 
 // File type config per media type
 const FILE_TYPE_CONFIG: Record<string, { accept: string; label: string; maxSize: number; maxSizeLabel: string }> = {
-    text: { accept: 'application/pdf', label: 'PDF File', maxSize: 100 * 1024 * 1024, maxSizeLabel: '100MB' },
+    text: { accept: 'application/pdf', label: 'PDF File', maxSize: 200 * 1024 * 1024, maxSizeLabel: '200MB' },
     video: { accept: 'video/mp4,video/webm', label: 'Video File', maxSize: 500 * 1024 * 1024, maxSizeLabel: '500MB' },
 };
 import UploadProgressComponent from "./UploadProgress";
