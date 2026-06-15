@@ -35,8 +35,9 @@ require_login();
 $context = context_system::instance();
 $PAGE->set_context($context);
 
-// Check for admin capability - only site admins can access.
-require_capability('moodle/site:config', $context);
+// Require any of the local/reblibrary:manage* capabilities to land on the
+// admin dashboard. Individual sub-pages enforce a more specific capability.
+local_reblibrary_require_admin($context);
 
 $PAGE->set_url(new moodle_url('/local/reblibrary/admin/index.php'));
 $PAGE->set_pagelayout('standard');

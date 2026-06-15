@@ -26,6 +26,7 @@
  */
 
 require_once('../../config.php');
+require_once($CFG->dirroot . '/local/reblibrary/lib.php');
 
 // Auto-login as guest if user is not logged in (for public library access).
 if (!isloggedin()) {
@@ -249,7 +250,7 @@ foreach ($categories as $category) {
 }
 
 // Check if user has admin capabilities (for showing/hiding admin menu).
-$isadmin = isloggedin() && !isguestuser() && has_capability('moodle/site:config', $context);
+$isadmin = isloggedin() && !isguestuser() && local_reblibrary_user_can_admin($context);
 
 // Prepare data for template.
 $templatecontext = [

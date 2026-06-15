@@ -87,7 +87,7 @@ $functions = [
         'description' => 'Get all education levels',
         'type' => 'read',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedulevels',
     ],
 
     'local_reblibrary_create_level' => [
@@ -97,7 +97,7 @@ $functions = [
         'description' => 'Create a new education level',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedulevels',
     ],
 
     'local_reblibrary_update_level' => [
@@ -107,7 +107,7 @@ $functions = [
         'description' => 'Update an education level',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedulevels',
     ],
 
     'local_reblibrary_delete_level' => [
@@ -117,7 +117,7 @@ $functions = [
         'description' => 'Delete an education level',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedulevels',
     ],
 
     // Education sublevels.
@@ -128,7 +128,7 @@ $functions = [
         'description' => 'Get all education sublevels',
         'type' => 'read',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedusublevels',
     ],
 
     'local_reblibrary_create_sublevel' => [
@@ -138,7 +138,7 @@ $functions = [
         'description' => 'Create a new education sublevel',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedusublevels',
     ],
 
     'local_reblibrary_update_sublevel' => [
@@ -148,7 +148,7 @@ $functions = [
         'description' => 'Update an education sublevel',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedusublevels',
     ],
 
     'local_reblibrary_delete_sublevel' => [
@@ -158,7 +158,7 @@ $functions = [
         'description' => 'Delete an education sublevel',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedusublevels',
     ],
 
     // Classes.
@@ -169,7 +169,7 @@ $functions = [
         'description' => 'Get all classes',
         'type' => 'read',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageclasses',
     ],
 
     'local_reblibrary_create_class' => [
@@ -179,7 +179,7 @@ $functions = [
         'description' => 'Create a new class',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageclasses',
     ],
 
     'local_reblibrary_update_class' => [
@@ -189,7 +189,7 @@ $functions = [
         'description' => 'Update a class',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageclasses',
     ],
 
     'local_reblibrary_delete_class' => [
@@ -199,7 +199,7 @@ $functions = [
         'description' => 'Delete a class',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageclasses',
     ],
 
     // Sections.
@@ -210,7 +210,7 @@ $functions = [
         'description' => 'Get all sections',
         'type' => 'read',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managesections',
     ],
 
     'local_reblibrary_create_section' => [
@@ -220,7 +220,7 @@ $functions = [
         'description' => 'Create a new section',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managesections',
     ],
 
     'local_reblibrary_update_section' => [
@@ -230,7 +230,7 @@ $functions = [
         'description' => 'Update a section',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managesections',
     ],
 
     'local_reblibrary_delete_section' => [
@@ -240,7 +240,7 @@ $functions = [
         'description' => 'Delete a section',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managesections',
     ],
 
     // Education structure reorder (drag-and-drop) endpoints.
@@ -251,7 +251,7 @@ $functions = [
         'description' => 'Persist a new sort order for education levels',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedulevels',
     ],
 
     'local_reblibrary_reorder_sublevels' => [
@@ -261,7 +261,7 @@ $functions = [
         'description' => 'Persist a new sort order for education sublevels',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageedusublevels',
     ],
 
     'local_reblibrary_reorder_classes' => [
@@ -271,7 +271,7 @@ $functions = [
         'description' => 'Persist a new sort order for classes',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:manageclasses',
     ],
 
     'local_reblibrary_reorder_sections' => [
@@ -281,7 +281,7 @@ $functions = [
         'description' => 'Persist a new sort order for sections',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managesections',
     ],
 
     // Categories web services.
@@ -292,7 +292,7 @@ $functions = [
         'description' => 'Create a new category',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managecategories',
     ],
 
     'local_reblibrary_update_category' => [
@@ -302,7 +302,7 @@ $functions = [
         'description' => 'Update a category',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managecategories',
     ],
 
     'local_reblibrary_delete_category' => [
@@ -312,7 +312,7 @@ $functions = [
         'description' => 'Delete a category',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managecategories',
     ],
 
     // Authors web services.
@@ -487,7 +487,7 @@ $functions = [
         'description' => 'Create a new label',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managecategories',
     ],
 
     'local_reblibrary_update_label' => [
@@ -497,7 +497,7 @@ $functions = [
         'description' => 'Update a label',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managecategories',
     ],
 
     'local_reblibrary_delete_label' => [
@@ -507,7 +507,7 @@ $functions = [
         'description' => 'Delete a label',
         'type' => 'write',
         'ajax' => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'local/reblibrary:managecategories',
     ],
 
     // Resource label assignment web services.

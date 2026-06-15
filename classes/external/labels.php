@@ -170,7 +170,7 @@ class labels extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managecategories', $context);
 
         $record = new \stdClass();
         $record->label_name = trim($params['label_name']);
@@ -230,7 +230,7 @@ class labels extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managecategories', $context);
 
         $record = $DB->get_record('local_reblibrary_labels', ['id' => $params['id']], '*', MUST_EXIST);
 
@@ -283,7 +283,7 @@ class labels extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managecategories', $context);
 
         $DB->delete_records('local_reblibrary_labels', ['id' => $params['id']]);
 

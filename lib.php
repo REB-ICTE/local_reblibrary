@@ -25,6 +25,64 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * Capabilities that grant access to the REB Library administration area.
+ *
+ * Possessing any one of these is enough to see the admin entry-points and to
+ * land on the admin dashboard. Each individual admin sub-page / web-service
+ * still enforces its own, more specific capability.
+ *
+ * @return string[]
+ */
+function local_reblibrary_get_manage_capabilities(): array {
+    return [
+        'local/reblibrary:manageedulevels',
+        'local/reblibrary:manageedusublevels',
+        'local/reblibrary:manageclasses',
+        'local/reblibrary:managesections',
+        'local/reblibrary:manageauthors',
+        'local/reblibrary:manageresources',
+        'local/reblibrary:managecategories',
+        'local/reblibrary:manageassignments',
+    ];
+}
+
+/**
+ * Whether the current user can access the REB Library administration area.
+ *
+ * Returns true when the user has any of the local/reblibrary:manage*
+ * capabilities. Site administrators always pass via Moodle's capability
+ * resolver.
+ *
+ * @param context|null $context Defaults to the system context.
+ * @return bool
+ */
+function local_reblibrary_user_can_admin(?context $context = null): bool {
+    $context = $context ?? context_system::instance();
+    return has_any_capability(local_reblibrary_get_manage_capabilities(), $context);
+}
+
+/**
+ * Require that the current user can access the REB Library administration
+ * area. Throws if they cannot.
+ *
+ * @param context|null $context Defaults to the system context.
+ * @throws required_capability_exception
+ */
+function local_reblibrary_require_admin(?context $context = null): void {
+    $context = $context ?? context_system::instance();
+    if (!local_reblibrary_user_can_admin($context)) {
+        // Use manageresources as the representative capability for the standard
+        // "missing capability" exception message.
+        throw new required_capability_exception(
+            $context,
+            'local/reblibrary:manageresources',
+            'nopermissions',
+            ''
+        );
+    }
+}
+
+/**
  * Add nodes to the global navigation.
  *
  * @param global_navigation $navigation
@@ -68,9 +126,9 @@ function local_reblibrary_extend_navigation(global_navigation $navigation) {
 function local_reblibrary_extend_settings_navigation(settings_navigation $navigation, context $context) {
     global $PAGE;
 
-    // Only add admin link if user has site config capability.
+    // Only add admin link if user can administer the library.
     $systemcontext = context_system::instance();
-    if (has_capability('moodle/site:config', $systemcontext)) {
+    if (local_reblibrary_user_can_admin($systemcontext)) {
         // Try to add to site administration if available.
         if ($settingnode = $navigation->find('siteadministration', navigation_node::TYPE_SITE_ADMIN)) {
             $adminurl = new moodle_url('/local/reblibrary/admin/index.php');
