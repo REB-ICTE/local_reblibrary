@@ -59,7 +59,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageedulevels', $context);
 
         $levels = $DB->get_records('local_reblibrary_edu_levels', null, 'sortorder ASC, level_name ASC');
 
@@ -109,7 +109,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageedulevels', $context);
 
         // Check for duplicate.
         if ($DB->record_exists('local_reblibrary_edu_levels', ['level_name' => $params['level_name']])) {
@@ -167,7 +167,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageedulevels', $context);
 
         $level = $DB->get_record('local_reblibrary_edu_levels', ['id' => $params['id']], '*', MUST_EXIST);
 
@@ -219,7 +219,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageedulevels', $context);
 
         $DB->delete_records('local_reblibrary_edu_levels', ['id' => $params['id']]);
 
@@ -254,7 +254,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageedusublevels', $context);
 
         $sublevels = $DB->get_records('local_reblibrary_edu_sublevels', null, 'level_id ASC, sortorder ASC, sublevel_name ASC');
 
@@ -308,7 +308,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageedusublevels', $context);
 
         // Check for duplicate.
         if ($DB->record_exists('local_reblibrary_edu_sublevels', ['sublevel_name' => $params['sublevel_name']])) {
@@ -372,7 +372,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageedusublevels', $context);
 
         $sublevel = $DB->get_record('local_reblibrary_edu_sublevels', ['id' => $params['id']], '*', MUST_EXIST);
 
@@ -435,7 +435,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageedusublevels', $context);
 
         $DB->delete_records('local_reblibrary_edu_sublevels', ['id' => $params['id']]);
 
@@ -470,7 +470,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageclasses', $context);
 
         $classes = $DB->get_records('local_reblibrary_classes', null, 'sublevel_id ASC, sortorder ASC, class_code ASC');
 
@@ -528,7 +528,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageclasses', $context);
 
         // Check for duplicate name.
         if ($DB->record_exists('local_reblibrary_classes', ['class_name' => $params['class_name']])) {
@@ -602,7 +602,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageclasses', $context);
 
         $class = $DB->get_record('local_reblibrary_classes', ['id' => $params['id']], '*', MUST_EXIST);
 
@@ -676,7 +676,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:manageclasses', $context);
 
         $DB->delete_records('local_reblibrary_classes', ['id' => $params['id']]);
 
@@ -711,7 +711,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managesections', $context);
 
         $sections = $DB->get_records('local_reblibrary_sections', null, 'sublevel_id ASC, sortorder ASC, section_code ASC');
 
@@ -769,7 +769,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managesections', $context);
 
         // Check for duplicate code.
         if ($DB->record_exists('local_reblibrary_sections', ['section_code' => $params['section_code']])) {
@@ -838,7 +838,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managesections', $context);
 
         $section = $DB->get_record('local_reblibrary_sections', ['id' => $params['id']], '*', MUST_EXIST);
 
@@ -904,7 +904,7 @@ class edu_structure extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managesections', $context);
 
         $DB->delete_records('local_reblibrary_sections', ['id' => $params['id']]);
 
@@ -957,12 +957,12 @@ class edu_structure extends external_api {
      * @param array $items Items as validated by reorder_params_structure().
      * @return array {success: bool, updated: int}
      */
-    private static function apply_reorder($table, array $items) {
+    private static function apply_reorder($table, $capability, array $items) {
         global $DB;
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability($capability, $context);
 
         $transaction = $DB->start_delegated_transaction();
         $updated = 0;
@@ -988,7 +988,7 @@ class edu_structure extends external_api {
 
     public static function reorder_levels($items) {
         $params = self::validate_parameters(self::reorder_levels_parameters(), ['items' => $items]);
-        return self::apply_reorder('local_reblibrary_edu_levels', $params['items']);
+        return self::apply_reorder('local_reblibrary_edu_levels', 'local/reblibrary:manageedulevels', $params['items']);
     }
 
     public static function reorder_levels_returns() {
@@ -1003,7 +1003,7 @@ class edu_structure extends external_api {
 
     public static function reorder_sublevels($items) {
         $params = self::validate_parameters(self::reorder_sublevels_parameters(), ['items' => $items]);
-        return self::apply_reorder('local_reblibrary_edu_sublevels', $params['items']);
+        return self::apply_reorder('local_reblibrary_edu_sublevels', 'local/reblibrary:manageedusublevels', $params['items']);
     }
 
     public static function reorder_sublevels_returns() {
@@ -1018,7 +1018,7 @@ class edu_structure extends external_api {
 
     public static function reorder_classes($items) {
         $params = self::validate_parameters(self::reorder_classes_parameters(), ['items' => $items]);
-        return self::apply_reorder('local_reblibrary_classes', $params['items']);
+        return self::apply_reorder('local_reblibrary_classes', 'local/reblibrary:manageclasses', $params['items']);
     }
 
     public static function reorder_classes_returns() {
@@ -1033,7 +1033,7 @@ class edu_structure extends external_api {
 
     public static function reorder_sections($items) {
         $params = self::validate_parameters(self::reorder_sections_parameters(), ['items' => $items]);
-        return self::apply_reorder('local_reblibrary_sections', $params['items']);
+        return self::apply_reorder('local_reblibrary_sections', 'local/reblibrary:managesections', $params['items']);
     }
 
     public static function reorder_sections_returns() {

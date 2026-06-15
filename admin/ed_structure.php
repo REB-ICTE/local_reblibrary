@@ -35,8 +35,23 @@ require_login();
 $context = context_system::instance();
 $PAGE->set_context($context);
 
-// Check for admin capability - only site admins can access.
-require_capability('moodle/site:config', $context);
+// Managing the education structure requires the appropriate per-entity
+// capability. Any one of them is enough to land on this page, because the page
+// hosts levels / sublevels / classes / sections tabs, and the per-entity
+// web-services enforce their own capability for write operations.
+if (!has_any_capability([
+    'local/reblibrary:manageedulevels',
+    'local/reblibrary:manageedusublevels',
+    'local/reblibrary:manageclasses',
+    'local/reblibrary:managesections',
+], $context)) {
+    throw new required_capability_exception(
+        $context,
+        'local/reblibrary:manageedulevels',
+        'nopermissions',
+        ''
+    );
+}
 
 $PAGE->set_url(new moodle_url('/local/reblibrary/admin/ed_structure.php'));
 $PAGE->set_pagelayout('standard');

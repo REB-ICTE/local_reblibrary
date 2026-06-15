@@ -34,8 +34,20 @@ require_login();
 $context = context_system::instance();
 $PAGE->set_context($context);
 
-// Check for admin capability - only site admins can access.
-require_capability('moodle/site:config', $context);
+// The resources page also surfaces author management, so allow access if the
+// user can manage either resources or authors. Each write web-service still
+// enforces its own capability.
+if (!has_any_capability([
+    'local/reblibrary:manageresources',
+    'local/reblibrary:manageauthors',
+], $context)) {
+    throw new required_capability_exception(
+        $context,
+        'local/reblibrary:manageresources',
+        'nopermissions',
+        ''
+    );
+}
 
 $PAGE->set_url(new moodle_url('/local/reblibrary/admin/resources.php'));
 $PAGE->set_pagelayout('standard');

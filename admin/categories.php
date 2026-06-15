@@ -34,8 +34,9 @@ require_login();
 $context = context_system::instance();
 $PAGE->set_context($context);
 
-// Check for admin capability - only site admins can access.
-require_capability('moodle/site:config', $context);
+// Categories and labels are managed together; require the categories
+// capability to access this page.
+require_capability('local/reblibrary:managecategories', $context);
 
 $PAGE->set_url(new moodle_url('/local/reblibrary/admin/categories.php'));
 $PAGE->set_pagelayout('standard');

@@ -74,7 +74,7 @@ class categories extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managecategories', $context);
 
         // Validate parent category exists if provided.
         if ($params['parent_category_id']) {
@@ -153,7 +153,7 @@ class categories extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managecategories', $context);
 
         $record = $DB->get_record('local_reblibrary_categories', ['id' => $params['id']], '*', MUST_EXIST);
 
@@ -226,7 +226,7 @@ class categories extends external_api {
 
         $context = context_system::instance();
         self::validate_context($context);
-        require_capability('moodle/site:config', $context);
+        require_capability('local/reblibrary:managecategories', $context);
 
         $record = $DB->get_record('local_reblibrary_categories', ['id' => $params['id']], '*', MUST_EXIST);
 
