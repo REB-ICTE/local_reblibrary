@@ -45,7 +45,7 @@ $allowedmimetypes = [
 
 // Max file size per media type.
 $maxfilesizes = [
-    'text' => 100 * 1024 * 1024,   // 100MB
+    'text' => 200 * 1024 * 1024,   // 200MB
     'video' => 500 * 1024 * 1024,   // 500MB
 ];
 

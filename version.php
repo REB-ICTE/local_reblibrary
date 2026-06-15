@@ -28,4 +28,4 @@ $plugin->component = 'local_reblibrary';
 $plugin->version = 2026061500;           // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires = 2025041400;          // Requires Moodle 5.0 (Build: 20250414).
 $plugin->maturity = MATURITY_STABLE;     // Code maturity level.
-$plugin->release = '1.7.0';              // Honour local/reblibrary:manage* capabilities throughout the admin area.
+$plugin->release = '1.7.1';              // Raise PDF upload cap to 200MB (code-only; no DB migration).

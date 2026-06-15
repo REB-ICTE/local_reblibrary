@@ -105,8 +105,8 @@ class upload_resource_file extends external_api {
             $pdfsize = strlen($pdfdata);
             $coversize = strlen($coverdata);
 
-            if ($pdfsize > 100 * 1024 * 1024) { // 100MB limit.
-                throw new \invalid_parameter_exception('PDF file exceeds 100MB limit');
+            if ($pdfsize > 200 * 1024 * 1024) { // 200MB limit.
+                throw new \invalid_parameter_exception('PDF file exceeds 200MB limit');
             }
 
             if ($coversize > 10 * 1024 * 1024) { // 10MB limit for cover.
